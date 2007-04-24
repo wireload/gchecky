@@ -73,24 +73,24 @@ class gcontroller:
     # the risk information notification for that order as well as
     # the order state change notification informing you that the order's financial state
     # has been updated to CHARGEABLE.
-    def on_new_order(self, new_order_notification, order_id, google_id):
+    def on_new_order(self, notification, order_id, google_id):
         return 'on_new_order'
-    def on_order_state_change(self, new_order_notification, order_id, google_id):
+    def on_order_state_change(self, notification, order_id, google_id):
         return 'on_order_state_change'
-    def on_authorization_amount(self, new_order_notification, order_id, google_id):
+    def on_authorization_amount(self, notification, order_id, google_id):
         return 'on_authorization_amount'
     # Google Checkout sends a risk information notification to provide financial information
     # that helps you to ensure that an order is not fraudulent.
-    def on_risk_information(self, new_order_notification, order_id, google_id):
+    def on_risk_information(self, notification, order_id, google_id):
         return 'on_risk_information'
-    def on_charge_amount(self, new_order_notification, order_id, google_id):
+    def on_charge_amount(self, notification, order_id, google_id):
         return 'on_charge_amount'
     def on_refund_amount(self):
         return 'on_refund_amount'
     def on_chargeback_amount(self):
         return 'on_chargeback_amount'
 
-    def on_checkout_redirect(self, new_order_notification, order_id, google_id):
+    def on_checkout_redirect(self, notification, order_id, google_id):
         raise Exception('We should not recieve this method... Please report this bug.')
 
     def on_failed_recieve(self, input_xml, error_message):
@@ -102,22 +102,6 @@ class html_order:
     url = None
     button = None
     xml = None
-
-def create_order():
-    return checkout_shopping_cart_t(
-                shopping_cart=shopping_cart_t(items=[
-                    item_t(name='Test_Item_1',
-                           description='Test Item 1 for testing purposes.',
-                           unit_price=price_t(value=1.55, currency='GBP'),
-                           quantity=3),
-                    item_t(name='Test_Item_2',
-                           description='Test Item 2 for testing purposes.',
-                           unit_price=price_t(value=5.23, currency='GBP'),
-                           quantity=2),
-                           ]),
-                checkout_flow_support=checkout_flow_support_t(
-                    continue_shopping_url='http://www.yahoo.com/',
-                    request_buyer_phone_number=False))
 
 if __name__ == '__main__':
     gc = gcontroller(vendor_id='your_google_sandbox_vendor_id',
