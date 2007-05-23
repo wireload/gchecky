@@ -48,9 +48,6 @@ class Controller:
 
     def send_message(self, message):
         msg = message.toxml()
-        print '-----------'
-        print msg
-        print '-----------'
         return self.send(msg)
 
     def create_HMAC_SHA_signature(self, xml_text):
@@ -76,9 +73,6 @@ class Controller:
     def process_response(self, response):
         try:
             doc = gxml.Document.fromxml(response)
-            print 'Result: %s' % (doc.__class__,)
-            print '=============='
-            print doc.toxml()
             if doc.__class__ != gmodel.request_received_t:
                 if doc.__class__ != gmodel.error_t:
                     # OMG! Unknown message!
@@ -89,7 +83,6 @@ class Controller:
                     for warning in doc.warning_messages:
                         tmp += '\n%s' % (warning,)
                     msg += ('Additional warnings:%s' % (tmp,))
-                print 'EXXXXXXXXXXXXXXXXCEPTION:' + msg
                 raise Exception(msg)
         except Exception, exc:
             print '==================='
@@ -225,16 +218,5 @@ class html_order:
     url = None
     button = None
     xml = None
-
-if __name__ == '__main__':
-    gc = Controller(vendor_id='your_google_sandbox_vendor_id',
-                    merchant_key='your_google_merchant_key',
-                    is_sandbox=True)
-    order = create_order()
-    html = gc.prepare_order(order)
-    
-    print "Input: %s" % (html.xml)
-    print "--------------------"
-    print gc.recieve(html.xml)
-
+    html = None
 

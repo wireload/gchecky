@@ -1,4 +1,3 @@
-
 """
 Gchecky provides an abstraction layer between google checkout API and user code.
 
@@ -44,5 +43,4 @@ Intergration of the library consists of four phases:
 @author: etarassov
 @version: $revision: $
 @contact: gchecky at gmail
-@summary:
 """

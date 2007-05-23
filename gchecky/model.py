@@ -1,24 +1,28 @@
+"""
+Gchecky.model module describes the mapping between Google Checkout API (GC API)
+XML messages (GC API XML Schema) and data classes.
+
+This module uses L{gchecky.gxml} to automate much of the work so that
+the actual logic is not cluttered with machinery.
+
+The module code is simple and self-documenting. Please read the source code for
+simple description of the data-structures. Note that it tries to follow exactly
+the official GC API XML Schema.
+
+All the comments for the GC API are at U{Google Chackout API documentation
+<http://code.google.com/apis/checkout/developer/>}. Please consult it for any
+questions about GC API functioning.
+
+@author: etarassov
+@version: $revision: $
+@contact: gchecky at gmail
+"""
+
 from gchecky import gxml
 
 class price_t(gxml.Node):
-    """
-Google: The <unit-price> tag identifies the cost of the item.
-This tag has one required attribute, which identifies the currency of the price.
-
-U{http://code.google.com/apis/checkout/developer/index.html#tag_unit-price}
-    @ivar value: The floating point value represents the amount of currency units.
-        Required.
-    @ivar currency: The currency attribute identifies the unit of currency
-        associated with the tag's value. The value of the currency attribute
-        should be a three-letter
-        U{ISO 4217 currency code<http://www.iso.org/en/prods-services/popstds/currencycodeslist.html>}.
-        Required.
-
-        Note that currently only 'USD' and 'GBP' are supported since for the moment
-        Google Checkout only supports businesses located in USA and United Kingdom.
-"""
     value    = gxml.Double('', default=0)
-    currency = gxml.String('@currency', values=('USD'))
+    currency = gxml.String('@currency', values=('USD', 'GBP'))
 
 class item_t(gxml.Node):
     name                = gxml.String('item-name')
@@ -30,6 +34,7 @@ class item_t(gxml.Node):
     tax_table_selector         = gxml.String('tax-table-selector', required=False)
 
 class tax_area_t(gxml.Node):
+    """
     state        = gxml.String('us-state-area/state')
     zip_pattern  = gxml.String('us-zip-area/zip-pattern') # regex: [a-zA-Z0-9_]+\*? Note the optional asterisk
     country_area = gxml.String('us-country-area/country-area', values=('CONTINENTAL_48', 'FULL_50_STATES', 'ALL')) # enum('CONTINENTAL_48', 'FULL_50_STATES', 'ALL')
@@ -87,7 +92,6 @@ class shipping_methods_t(gxml.Node):
     merchant_calculated_shippings = gxml.List('', gxml.Complex('merchant-calculated-shipping', merchant_calculated_shipping_t)) # list of merchant_calculated_shipping_t
     pickups                       = gxml.List('', gxml.Complex('pickup', pickup_t)) # list of pickup_t
 
-# 'merchant-checkout-flow-support'
 class checkout_flow_support_t(gxml.Node):
     edit_cart_url              = gxml.Url('edit-cart-url', required=False)         # optional, URL
     continue_shopping_url      = gxml.Url('continue-shopping-url', required=False) # optional, URL
@@ -168,7 +172,6 @@ class abstract_notification_t(gxml.Document):
 FINANCIAL_ORDER_STATE=('REVIEWING', 'CHARGEABLE', 'CHARGING', 'CHARGED', 'PAYMENT_DECLINED', 'CANCELLED', 'CANCELLED_BY_GOOGLE')
 FULFILLMENT_ORDER_STATE=('NEW', 'PROCESSING', 'DELIVERED', 'WILL_NOT_DELIVER')
 
-## 'new-order-notification'
 class new_order_notification_t(abstract_notification_t):
     tag_name = 'new-order-notification'
     buyer_billing_address       = gxml.Complex('buyer-billing-address', buyer_billing_address_t)
@@ -294,7 +297,6 @@ class request_received_t(gxml.Document):
     tag_name = 'request-received'
     serial_number = gxml.ID('@serial-number')
 
-
 class error_t(gxml.Document):
     tag_name = 'error'
     serial_number    = gxml.ID('@serial-number')
@@ -310,49 +312,3 @@ class diagnosis_t(gxml.Document):
                           gxml.String('string'),
                           required=False)
 
-
-
-
-
-
-
-
-def dump_node(clz, done={}, indent='', prefix=''):
-    for (name, clazz) in NodeManager.nodes.items():
-        if clazz == clz:
-            clz_name = name
-            break
-    else:
-        raise Exception, ("Unregistered class %s" % (clz, ))
-
-    # Do not recursivly prinout the class info if it was already done
-    # Avoidinfinite recursion.
-    if done.has_key(clz):
-        print '%s%s%s {-}' % (indent, prefix, clz_name)
-        return
-
-    print '%s%s%s' % (indent, prefix, clz_name)
-    done[clz] = True
-
-    max_len = 0
-    for fname, field in clz.fields().items():
-        max_len = (max_len > len(fname) and max_len) or len(fname)
-    for fname, field in clz.fields().items():
-        dump_field(field,
-                   done,
-                   '%s    %s-' % (indent, (field.required and '|') or '?'),
-                   '%s%s ' % (fname, '-' * (max_len - len(fname))))
-
-def dump_field(field, done, indent, prefix):
-    prefix = '%s<%s>' % (prefix, field.path or '.')
-    if isinstance(field, gxml.List):
-        dump_field(field.list_item, done, indent, '%s *' % (prefix,))
-    elif isinstance(field, gxml.Complex):
-        str = ' ' * (len(prefix) + 2)
-        dump_node(field.clazz, done, '%s' % (indent,), '%s ::' % (prefix,))
-    else:
-        print '%s%s' % (indent, prefix)
-
-if __name__ == '__main__':
-    dump_node(risk_information_notification_t)
-    print str

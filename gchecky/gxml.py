@@ -1,5 +1,36 @@
+"""
+Gchecky.gxml module provides an abstraction layer when dealing with Google
+Checkout API services (GC API). It translates XML messages into human-friendly python
+structures and vice versa.
 
-GOOGLE_CHECKOUT_SCHEMA = 'http://checkout.google.com/schema/2'
+In practice it means that when you have recieved
+a notification message from GC API, and you want to understand what's in that
+XML message, you simply pass it to gchecky and it parses (and automatically
+validates it for you) the XML text into python objects - instances of the class
+corresponding to the message type. Then that object is passed to your hook
+method along with extracted google order_id.
+
+For example when an <order-state-change /> XML message is send to you by GC API
+gchecky will call on_order_state_change passing it an instance of
+C{gchecky.gxml.order_state_change_t} along with google order_id.
+
+This is very convenient since you don't have to manipulate xml text, or xml DOM
+tree, neither do you have to validate the recieved message - it is already done
+by gchecky.
+
+See L{gchecky.controller} module for information on how to provide hooks
+to the controller or customize it. 
+
+@cvar GOOGLE_CHECKOUT_API_XML_SCHEMA: the google checkout API messages xml
+    schema location (more correctly it is the XML namesoace identificator for
+    elements of the XML messages for google checkout API services).
+
+@author: etarassov
+@version: $revision: $
+@contact: gchecky at gmail
+"""
+
+GOOGLE_CHECKOUT_API_XML_SCHEMA = 'http://checkout.google.com/schema/2'
 
 class Field(object):
     """Holds all the meta-information about mapping the current field value into/from
@@ -339,7 +370,7 @@ class Document(Node):
         """@return: A string for the XML document representing the Document
         instance."""
         from xml.dom import implementation
-        namespace = GOOGLE_CHECKOUT_SCHEMA
+        namespace = GOOGLE_CHECKOUT_API_XML_SCHEMA
         tag_name = self.__class__.tag_name
         dt = implementation.createDocumentType(tag_name, '', '')
         doc = implementation.createDocument(namespace, tag_name, dt)
