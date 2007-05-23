@@ -41,6 +41,6 @@ Intergration of the library consists of four phases:
      further processing (or charging, refunding, delivering etc.) 
 
 @author: etarassov
-@version: $Revision: $
+@version: $Revision $
 @contact: gchecky at gmail
 """
