@@ -14,7 +14,7 @@ All the comments for the GC API are at U{Google Chackout API documentation
 questions about GC API functioning.
 
 @author: etarassov
-@version: $revision: $
+@version: $Revision: $
 @contact: gchecky at gmail
 """
 

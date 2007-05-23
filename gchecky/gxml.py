@@ -26,7 +26,7 @@ to the controller or customize it.
     elements of the XML messages for google checkout API services).
 
 @author: etarassov
-@version: $revision: $
+@version: $Revision: $
 @contact: gchecky at gmail
 """
 
