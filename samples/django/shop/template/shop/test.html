@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block body %}
+
+<form action="" method="POST">
+<textarea cols="100" rows="15" name="xml">{{ input_xml|escape }}</textarea><br />
+<input type="submit" value="Test" />
+</form>
+{% if error %}
+<pre style="border:1px solid red;background:#fee;">{{ error|escape }}</pre>
+{% endif %}
+
+<blockquote>{{ output_xml|escape }}</blockquote>
+
+
+{% endblock %}
