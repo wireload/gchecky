@@ -4,8 +4,6 @@ import urllib2
 from gchecky import gxml
 from gchecky import model as gmodel
 
-URL = 'https://%s.google.com/checkout/cws/v2/Merchant/%s/checkout'
-BUTTON = 'http://%s.google.com/checkout/buttons/checkout.gif?merchant_id=%s&w=180&h=46&style=white&variant=text&loc=en_US'
 HTML = """
 <form method="POST" action="%s">
     <input type="hidden" name="cart" value="%s" />
@@ -13,8 +11,6 @@ HTML = """
     <input type="image" src="%s" border="0" alt="Google Checkout" /> 
 </form>
 """
-SENDING_URL = 'https://checkout.google.com/checkout/cws/v2/Merchant/%s/request'
-SANDBOX_SENDING_URL = 'https://sandbox.google.com/checkout/cws/v2/Merchant/%s/request'
 
 class Controller:
     # Create the controller, specify all the needed information
@@ -28,12 +24,23 @@ class Controller:
         self.is_sandbox = is_sandbox
         self.www_prefix = (is_sandbox and 'sandbox') or 'www'
 
-    def sending_url(self):
-        url_pattern = (self.is_sandbox and SANDBOX_SENDING_URL) or SENDING_URL
-        return url_pattern % (self.vendor_id,)
+    def get_cart_post_url(self):
+        POST_CART_URL = 'https://%s.google.com/checkout/cws/v2/Merchant/%s/checkout'
+        return POST_CART_URL % ((self.is_sandbox and 'sandbox') or 'www',
+                                self.vendor_id)
+
+    def get_api_level2_url(self):
+        API_LEVEL2_URL = 'https://%s.google.com/checkout/cws/v2/Merchant/%s/request'
+        return API_LEVEL2_URL % ((self.is_sandbox and 'sandbox') or 'checkout',
+                                 self.vendor_id)
+
+    def get_cart_post_button(self):
+        POST_CART_BUTTON = 'http://%s.google.com/checkout/buttons/checkout.gif?merchant_id=%s&w=180&h=46&style=white&variant=text&loc=en_US'
+        return POST_CART_BUTTON % ((self.is_sandbox and 'sandbox') or 'www',
+                                   self.vendor_id)
 
     def send(self, msg):
-        req = urllib2.Request(url=self.sending_url(),
+        req = urllib2.Request(url=self.get_api_level2_url(),
                               data=msg)
         req.add_header('Authorization',
                        'Basic %s' % (b64encode('%s:%s' % (self.vendor_id,
@@ -64,30 +71,27 @@ class Controller:
         html = html_order()
         html.cart = cart64
         html.signature = signature64
-        html.url = URL % (self.www_prefix, self.vendor_id)
-        html.button = BUTTON % (self.www_prefix, self.vendor_id)
+        html.url = self.get_cart_post_url()
+        html.button = self.get_cart_post_button()
         html.xml = cart
         html.html = HTML % (html.url, html.cart, html.signature, html.button)
         return html
 
     def process_response(self, response):
-        try:
-            doc = gxml.Document.fromxml(response)
-            if doc.__class__ != gmodel.request_received_t:
-                if doc.__class__ != gmodel.error_t:
-                    # OMG! Unknown message!
-                    raise Exception, 'SEVERE ERROR! THE GCHECKY LIBRARY DOES NOT FUNCTION PROPERLY'
-                msg = 'Error message from GCheckout API:\n%s' % (doc.error_message, )
-                if doc.warning_messages:
-                    tmp = ''
-                    for warning in doc.warning_messages:
-                        tmp += '\n%s' % (warning,)
-                    msg += ('Additional warnings:%s' % (tmp,))
-                raise Exception(msg)
-        except Exception, exc:
-            print '==================='
-            print 'Exception: %s' % (exc,)
-            print '==================='
+        doc = gxml.Document.fromxml(response)
+        if doc.__class__ != gmodel.request_received_t:
+            if doc.__class__ != gmodel.error_t:
+                # OMG! Unknown message!
+                raise Exception, 'SEVERE ERROR! THE GCHECKY LIBRARY DOES NOT FUNCTION PROPERLY'
+            msg = 'Error message from GCheckout API:\n%s' % (doc.error_message, )
+            if doc.warning_messages:
+                tmp = ''
+                for warning in doc.warning_messages:
+                    tmp += '\n%s' % (warning,)
+                msg += ('Additional warnings:%s' % (tmp,))
+            raise Exception(msg)
+        if doc.__class__ != gmodel.request_received_t:
+            raise Exception("%s" % (doc.serial_number,))
 
     def archive_order(self, order_id):
         self.process_response(self.send_message(

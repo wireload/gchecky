@@ -156,14 +156,26 @@ class Field(object):
         """Override this method in subclasses"""
         raise Exception('Abstract method of %s' % self.__class__)
 
-    def set_path_node(self, parent):
+    def create_node_for_path(self, parent):
+        """Create (if needed) a XML DOM node that will hold this field data.
+        @param parent: The parent node that should hold this fields data.
+        @return: Return the XML DOM node to hold this field's data. The node
+          created as a subnode (or an attribute, or a grand-node, etc.) of
+          parent.
+        """
         for nname in self.path_nodes:
             node = parent.ownerDocument.createElement(nname)
             parent.appendChild(node)
             parent = node
         return parent
 
-    def get_path_nodes(self, parent):
+    def get_nodes_for_path(self, parent):
+        """Retrieve all the nodes that hold data supposed to be assigned to this
+        field. If this field path matches a subnode (or a 'grand' subnode, or
+        an atribute, etc) of the 'parent' node, then it is included in
+        the returned list.
+        @param parent: The node to scan for this field data occurences.
+        @return: The list of nodes that corresponds to this field."""
         from xml.dom.Document import Node as XmlNode
         elements = [parent]
         for nname in self.path_nodes:
@@ -177,13 +189,17 @@ class Field(object):
                             els.append(item)
             elements = els
         return elements
-    def get_path_node(self, parent):
-        els = self.get_path_nodes(parent)
+    def get_one_node_for_path(self, parent):
+        """Same as 'get_nodes_path' but checks that there is exactly one result
+        and returns it."""
+        els = self.get_nodes_for_path(parent)
         if len(els) != 1:
             raise Exception('Multiple nodes where exactly one is expected %s' % (self.path_nodes,))
         return els[0]
-    def if_path_node(self, parent):
-        els = self.get_path_nodes(parent)
+    def get_any_node_for_path(self, parent):
+        """Same as 'get_nodes_path' but checks that there is no more than one
+        result and returns it, or None if the list is empty."""
+        els = self.get_nodes_for_path(parent)
         if len(els) > 1:
             raise Exception('Multiple nodes where at most one is expected %s' % (self.path_nodes,))
         if len(els) == 0:
@@ -303,12 +319,12 @@ class Node(object):
                 continue
             if (data != '' or not field.empty) and not field.validate(data):
                 raise Exception('Invalid data for <%s> in %s' % (fname, data)) 
-            field.save(field.set_path_node(node), data)
+            field.save(field.create_node_for_path(node), data)
 
     def read(self, node):
         """Load a L{Node} from an xml DOM node."""
         for fname, field in self.fields().items():
-            fnode = field.if_path_node(node)
+            fnode = field.get_any_node_for_path(node)
 
             data = fnode and field.load(fnode)
 
@@ -435,14 +451,14 @@ class List(Field):
         """Store the data list in a DOM node.
         @param node: the xml DOM node to hold the list
         @param data: a list of items to be stored"""
-        # node = self.list_item.set_path_node(node)
+        # node = self.list_item.create_node_for_path(node)
         for item_data in data:
             if item_data is None:
                 if self.list_item.required: raise Exception('Required data is None')
                 continue
             if not self.list_item.validate(item_data):
                 raise Exception('Invalid data! %s in %s' % (item_data, self.list_item))
-            inode = self.list_item.set_path_node(node) 
+            inode = self.list_item.create_node_for_path(node) 
             self.list_item.save(inode, item_data)
 
     def load(self, node):
@@ -450,7 +466,7 @@ class List(Field):
         @param node: the xml DOM node containing the list.
         @return: a list of items."""
         data = []
-        for inode in self.list_item.get_path_nodes(node):
+        for inode in self.list_item.get_nodes_for_path(node):
             if inode is None:
                 if self.list_item.required: raise Exception('Required data is None')
                 data.append(None)
@@ -627,6 +643,5 @@ class Timestamp(Field):
         from datetime import datetime
         from xml.utils import iso8601
         # 2007-04-23T14:31:54.000Z
-        # d = (0, 0, 0)
         return datetime.fromtimestamp(iso8601.parse(text))
 

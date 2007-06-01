@@ -1,3 +1,4 @@
+
 """
 Gchecky.model module describes the mapping between Google Checkout API (GC API)
 XML messages (GC API XML Schema) and data classes.
@@ -34,7 +35,7 @@ class item_t(gxml.Node):
     tax_table_selector         = gxml.String('tax-table-selector', required=False)
 
 class tax_area_t(gxml.Node):
-    """
+    """ """
     state        = gxml.String('us-state-area/state')
     zip_pattern  = gxml.String('us-zip-area/zip-pattern') # regex: [a-zA-Z0-9_]+\*? Note the optional asterisk
     country_area = gxml.String('us-country-area/country-area', values=('CONTINENTAL_48', 'FULL_50_STATES', 'ALL')) # enum('CONTINENTAL_48', 'FULL_50_STATES', 'ALL')
