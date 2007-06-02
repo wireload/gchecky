@@ -1,4 +1,9 @@
 This directory will contain examples of usage of gchecky.
 
-Currently only a basic example for Django is available. See its description
-in shop directory.
+samples/django/
+- Django pseudo-application example
+
+samples/gbutton/
+- simple GButton example
+
+See the corresponding README.txt for the sample description.
