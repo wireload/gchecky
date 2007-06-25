@@ -1,0 +1,8 @@
+README.txt
+setup.py
+setup.cfg
+gchecky/__init__.py
+gchecky/controller.py
+gchecky/data.py
+gchecky/gxml.py
+gchecky/model.py
