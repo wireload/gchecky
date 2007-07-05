@@ -119,7 +119,7 @@ RISK_NOTIFICATION = """<?xml version="1.0" encoding="UTF-8"?>
       <region></region>
       <postal-code>75001</postal-code>
     </billing-address>
-    <ip-address>81.57.142.122</ip-address>
+    <ip-address>10.0.0.1</ip-address>
     <avs-response>Y</avs-response>
     <cvn-response>U</cvn-response>
     <eligible-for-protection>true</eligible-for-protection>
