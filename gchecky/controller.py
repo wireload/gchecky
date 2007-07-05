@@ -12,9 +12,21 @@ HTML = """
 </form>
 """
 
-class Controller:
-    # Create the controller, specify all the needed information
-    # such as merchant account credentials:
+class ProcessingException(Exception):
+    def __init__(self, message, where=''):
+        self.where = where
+        return Exception.__init__(self, message)
+
+class html_order(object):
+    cart = None
+    signature = None
+    url = None
+    button = None
+    xml = None
+    html = None
+
+class ControllerLevel_1(object):
+    # Specify all the needed information such as merchant account credentials:
     #   - sandbox or production
     #   - google vendor ID
     #   - google merchant key
@@ -29,33 +41,10 @@ class Controller:
         return POST_CART_URL % ((self.is_sandbox and 'sandbox') or 'www',
                                 self.vendor_id)
 
-    def get_api_level2_url(self):
-        API_LEVEL2_URL = 'https://%s.google.com/checkout/cws/v2/Merchant/%s/request'
-        return API_LEVEL2_URL % ((self.is_sandbox and 'sandbox') or 'checkout',
-                                 self.vendor_id)
-
     def get_cart_post_button(self):
         POST_CART_BUTTON = 'http://%s.google.com/checkout/buttons/checkout.gif?merchant_id=%s&w=180&h=46&style=white&variant=text&loc=en_US'
         return POST_CART_BUTTON % ((self.is_sandbox and 'sandbox') or 'www',
                                    self.vendor_id)
-
-    def send(self, msg):
-        req = urllib2.Request(url=self.get_api_level2_url(),
-                              data=msg)
-        req.add_header('Authorization',
-                       'Basic %s' % (b64encode('%s:%s' % (self.vendor_id,
-                                                          self.merchant_key)),))
-        req.add_header('Content-Type', ' application/xml; charset=UTF-8')
-        req.add_header('Accept', ' application/xml; charset=UTF-8')
-        try:
-            response = urllib2.urlopen(req).read()
-        except urllib2.HTTPError, error:
-            response = error.fp.read()
-        return response
-
-    def send_message(self, message):
-        msg = message.toxml()
-        return self.send(msg)
 
     def create_HMAC_SHA_signature(self, xml_text):
         import hmac, sha
@@ -77,8 +66,33 @@ class Controller:
         html.html = HTML % (html.url, html.cart, html.signature, html.button)
         return html
 
-    def process_response(self, response):
-        doc = gxml.Document.fromxml(response)
+class ControllerLevel_2(ControllerLevel_1):
+    def get_api_level2_url(self):
+        API_LEVEL2_URL = 'https://%s.google.com/checkout/cws/v2/Merchant/%s/request'
+        return API_LEVEL2_URL % ((self.is_sandbox and 'sandbox') or 'checkout',
+                                 self.vendor_id)
+
+    def send_xml(self, msg):
+        req = urllib2.Request(url=self.get_api_level2_url(),
+                              data=msg)
+        req.add_header('Authorization',
+                       'Basic %s' % (b64encode('%s:%s' % (self.vendor_id,
+                                                          self.merchant_key)),))
+        req.add_header('Content-Type', ' application/xml; charset=UTF-8')
+        req.add_header('Accept', ' application/xml; charset=UTF-8')
+        try:
+            response = urllib2.urlopen(req).read()
+        except urllib2.HTTPError, error:
+            response = error.fp.read()
+        return response
+
+    def send_message(self, message):
+        message_xml = message.toxml()
+        response_xml = self.send_xml(message_xml)
+        return self.process_message_result(message_xml, response_xml)
+
+    def process_message_result(self, message_xml, response_xml):
+        doc = gxml.Document.fromxml(response_xml)
         if doc.__class__ != gmodel.request_received_t:
             if doc.__class__ != gmodel.error_t:
                 # OMG! Unknown message!
@@ -94,63 +108,63 @@ class Controller:
             raise Exception("%s" % (doc.serial_number,))
 
     def archive_order(self, order_id):
-        self.process_response(self.send_message(
-            gmodel.archive_order_t(google_order_number=order_id)))
+        self.send_message(
+            gmodel.archive_order_t(google_order_number=order_id))
     def unarchive_order(self, order_id):
-        self.process_response(self.send_message(
-            gmodel.unarchive_order_t(google_order_number=order_id)))
+        self.send_message(
+            gmodel.unarchive_order_t(google_order_number=order_id))
 
     def send_buyer_message(self, order_id, message):
-        self.process_response(self.send_message(gmodel.send_buyer_message_t(
+        self.send_message(gmodel.send_buyer_message_t(
             google_order_number = order_id,
             message = message,
             send_email = True
-            )))
+            ))
 
     def add_merchant_order_number(self, order_id, merchant_order_number):
-        self.process_response(self.send_message(gmodel.add_merchant_order_number_t(
+        self.send_message(gmodel.add_merchant_order_number_t(
             google_order_number = order_id,
             merchant_order_number = merchant_order_number
-            )))
+            ))
 
     def add_tracking_data(self, order_id, carrier, tracking_number):
-        self.process_response(self.send_message(gmodel.add_tracking_data_t(
+        self.send_message(gmodel.add_tracking_data_t(
             google_order_number = order_id,
             tracking_data = gmodel.tracking_data_t(carrier         = carrier,
                                                    tracking_number = tracking_number)
-            )))
+            ))
 
     def charge_order(self, order_id, amount):
-        self.process_response(self.send_message(gmodel.charge_order_t(
+        self.send_message(gmodel.charge_order_t(
             google_order_number = order_id,
             amount = gmodel.price_t(value = amount, currency = 'GBP')
-            )))
+            ))
 
     def refund_order(self, order_id, amount, reason, comment=None):
-        self.process_response(self.send_message(gmodel.refund_order_t(
+        self.send_message(gmodel.refund_order_t(
             google_order_number = order_id,
             amount = gmodel.price_t(value = amount, currency = 'GBP'),
             reason = reason,
             comment = comment or None
-            )))
+            ))
 
     def authorize_order(self, order_id, do_in_production=False):
         if do_in_production or self.is_sandbox:
-            self.process_response(self.send_message(gmodel.authorize_order_t(
+            self.send_message(gmodel.authorize_order_t(
                 google_order_number = order_id
-            )))
+            ))
 
     def cancel_order(self, order_id, reason, comment=None):
-        self.process_response(self.send_message(gmodel.cancel_order_t(
+        self.send_message(gmodel.cancel_order_t(
             google_order_number = order_id,
             reason = reason,
             comment = comment or None
-            )))
+            ))
 
     def process_order(self, order_id):
-        self.process_response(self.send_message(gmodel.process_order_t(
+        self.send_message(gmodel.process_order_t(
             google_order_number = order_id
-            )))
+            ))
 
     def deliver_order(self, order_id,
                       carrier = None, tracking_number = None,
@@ -159,11 +173,11 @@ class Controller:
         if carrier or tracking_number:
             tracking = gmodel.tracking_data_t(carrier         = carrier,
                                               tracking_number = tracking_number)
-        self.process_response(self.send_message(gmodel.deliver_order_t(
+        self.send_message(gmodel.deliver_order_t(
             google_order_number = order_id,
             tracking_data = tracking,
             send_email = send_email or None
-            )))
+            ))
 
     def is_of_class(self, doc, cls):
         return doc.__class__ == cls
@@ -179,16 +193,24 @@ class Controller:
         # Message(s) that we can't possibly recieve. Handle it anyway.
         gmodel.checkout_redirect_t:                 'on_checkout_redirect',
         }
-    def recieve(self, input_xml):
-        input = gxml.Document.fromxml(input_xml)
-        on_handler = None
-        if self.MESSAGE_HANDLERS.has_key(input.__class__):
-            handler = self.MESSAGE_HANDLERS[input.__class__]
-            on_handler = self.__class__.__dict__[handler]
-            res = on_handler(self, input, input.google_order_number)
-        else:
-            res = 'Method for %s is not implemented yet' % (input.__class__,)
-        return str(res)
+    # This method gets a string and resturns a string
+    # TODO ?? what about iterators, etc?
+    def process(self, input_xml):
+        try:
+            input = gxml.Document.fromxml(input_xml)
+            on_handler = None
+            if self.MESSAGE_HANDLERS.has_key(input.__class__):
+                handler = self.MESSAGE_HANDLERS[input.__class__]
+                on_handler = getattr(self, handler)
+                res = on_handler(input, input.google_order_number)
+            else:
+                res = 'Method for %s is not implemented yet' % (input.__class__,)
+            return str(res or gmodel.ok_t())
+        except Exception, exc:
+            xml_text = gmodel.error_t(serial_number = 'error',
+                                      error_message = str(exc)).toxml()
+            import traceback
+            raise ProcessingException(xml_text, where=traceback.format_exc())
 
     # Google sends a new order notification when a buyer places an order through Google Checkout.
     # Before shipping the items in an order, you should wait until you have also received
@@ -212,15 +234,7 @@ class Controller:
     def on_chargeback_amount(self, notification, order_id):
         return 'on_chargeback_amount'
     def on_checkout_redirect(self, notification, order_id):
-        raise Exception('We should not recieve this method... Please report this bug.')
-    def on_failed_recieve(self, input_xml, error_message):
-        pass
+        raise Exception('We should never recieve this... this is a bug.')
 
-class html_order:
-    cart = None
-    signature = None
-    url = None
-    button = None
-    xml = None
-    html = None
 
+Controller = ControllerLevel_2

@@ -122,7 +122,8 @@ class Field(object):
         if self.path_attribute is not None:
             node.setAttribute(self.path_attribute, str)
         else:
-            node.appendChild(node.ownerDocument.createTextNode(str))
+            if str is not None:
+                node.appendChild(node.ownerDocument.createTextNode(str))
 
     def load(self, node):
         """Load the field data from the xml DOM node. The value is retrieved
@@ -294,7 +295,7 @@ class Node(object):
         instance = object.__new__(cls)
         for fname, field in cls.fields().items():
             setattr(instance, fname, field.default)
-            if field.default is None and field.values:
+            if field.default is None and field.values and field.required:
                 setattr(instance, fname, field.values[0])
         return instance
 
@@ -324,20 +325,23 @@ class Node(object):
     def read(self, node):
         """Load a L{Node} from an xml DOM node."""
         for fname, field in self.fields().items():
-            fnode = field.get_any_node_for_path(node)
-
-            data = fnode and field.load(fnode)
-
-            if data is None:
-                if field.required:
-                    raise Exception('Field <%s> is required, but data for it is None' % (fname,))
-            elif data == '':
-                if field.required and not field.empty:
-                    raise Exception('Field <%s> can not be empty, but data for it is ""' % (fname,))
-            else:
-                if not field.validate(data):
-                    raise Exception('Invalid data for <%s>: %s' % (fname, data))
-            setattr(self, fname, data)
+            try:
+                fnode = field.get_any_node_for_path(node)
+    
+                data = fnode and field.load(fnode)
+    
+                if data is None:
+                    if field.required:
+                        raise Exception('Field <%s> is required, but data for it is None' % (fname,))
+                elif data == '':
+                    if field.required and not field.empty:
+                        raise Exception('Field <%s> can not be empty, but data for it is ""' % (fname,))
+                else:
+                    if not field.validate(data):
+                        raise Exception('Invalid data for <%s>: %s' % (fname, data))
+                setattr(self, fname, data)
+            except Exception, exc:
+                raise Exception('%s\n%s' % ('While reading %s' % (fname,), exc))
 
 class DocumentManager(NodeManager):
     """Kepps track of all the L{Document} subclasses. Similar to L{NodeManager}
@@ -398,6 +402,13 @@ class Document(Node):
         text = output.getvalue()
         output.close()
         return text
+
+    def __str__(self):
+        try:
+            return self.toxml()
+        except Exception:
+            pass
+        return self.__repr__()
 
     @classmethod
     def fromxml(self, text):
@@ -523,10 +534,14 @@ class Complex(Field):
 
 class String(Field):
     """Any text value."""
+    def __init__(self, path, maxlength=None, **kwargs):
+        return super(String, self).__init__(path, maxlength=maxlength, **kwargs)
     def data2str(self, data):
-        return '%s' % (data,)
+        return str(data)
     def str2data(self, text):
         return text
+    def validate(self, data):
+        return (self.maxlength is None) or len(str(data)) < self.maxlength
 
 class Pattern(String):
     """A string matching a pattern.
@@ -536,11 +551,11 @@ class Pattern(String):
         """Initizlizes a Pattern field.
         @param path: L{Field.path}
         @param pattern: a regular expression describing the format of the data"""
-        String.__init__(self, path, pattern=pattern, **kwargs)
+        return super(Pattern, self).__init__(path=path, pattern=pattern, **kwargs)
 
     def validate(self, data):
         """Checks if the pattern matches the data."""
-        return not self.pattern.match(data) is None
+        return super(Pattern, self).validate(data) and not(self.pattern.match(data) is None)
 
 class Decimal(Field):
     default=0
@@ -590,6 +605,13 @@ class Email(Pattern):
         import re
         pattern = re.compile(r'^[a-zA-Z0-9\.\_\%\-\+]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
         Pattern.__init__(self, path, pattern=pattern, **kwargs)
+
+class Html(String):
+    pass
+
+class LanguageCode(Pattern):
+    def __init__(self, path):
+        return super(LanguageCode, self).__init__(path=path, pattern='^en_US$')
 
 class Phone(Pattern):
     def __init__(self, path, **kwargs):
