@@ -2,10 +2,10 @@ This directory contains a simple application to be used in a django project.
 
 To use it from within your django project do the following:
 
-1) add the directory containing shop to your PYTHONPATH (see django installation
-   instructions)
+1) add the directory containing 'gcheckout' application to your PYTHONPATH
+   (see django installation instructions)
 2) add gcheckout' application to your django project applications list
-3) do 'python manage.py syncdb' to create database tables for 'shop'
+3) do 'python manage.py syncdb' to create database tables for 'gcheckout'
 4) add 'gcheckout_vendor_id' and 'gcheckout_merchant_key' variables to your
    /settings.py file as descibed in /samples/django/settings.py.
 5) derive from gcheckout.DjangoGController class and override its methods
@@ -22,11 +22,11 @@ To use it from within your django project do the following:
 8) test your installation by invoking 'python manage.py test'
 9) go to http://groups.google.com/group/gchecky/ and post your questions there.
    :-)
-*) go to http://code.google.com/p/gchecky/ and report bug, issues, feature
+*) go to http://code.google.com/p/gchecky/ and report bugs, issues, post feature
    requests. It would be lovely to hear from you.
 
-Sample usage (create anapplication my_app in your project):
-/my_app/__init__.py file:
+Example usage (create an application my_app in your django project):
+my_django_project/my_app/__init__.py file:
 ========================
     from settings import gcheckout_vendor_id, gcheckout_merchant_key, gcheckout_is_sandbox
     from gcheckout import DjangoGController
@@ -52,7 +52,7 @@ Sample usage (create anapplication my_app in your project):
                                           gcheckout_is_sandbox)
         return my_controller
 
-/urls.py file:
+my_django_project/urls.py file:
 =============
     from django.conf.urls.defaults import *
     
