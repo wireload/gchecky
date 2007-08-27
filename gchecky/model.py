@@ -42,7 +42,9 @@ class item_t(gxml.Node):
     merchant_item_id    = gxml.String('merchant-item-id', required=False)
     tax_table_selector  = gxml.String('tax-table-selector', required=False)
     digital_content     = gxml.Complex('digital-content', digital_content_t, required=False)
-    merchant_private_item_data = gxml.Any('merchant-private-item-data', required=False)
+    merchant_private_item_data = gxml.Any('merchant-private-item-data',
+                                          save_node_and_xml=True,
+                                          required=False)
 
 class postal_area_t(gxml.Node):
     country_code        = CountryCode('country-code')
@@ -126,7 +128,9 @@ class checkout_flow_support_t(gxml.Node):
 class shopping_cart_t(gxml.Node):
     expiration            = gxml.Timestamp('cart-expiration/good-until-date', required=False)
     items                 = gxml.List('items', gxml.Complex('item', item_t))
-    merchant_private_data = gxml.Any('merchant-private-data', required=False)
+    merchant_private_data = gxml.Any('merchant-private-data',
+                                     save_node_and_xml=True,
+                                     required=False)
 
 class checkout_shopping_cart_t(gxml.Document):
     tag_name = 'checkout-shopping-cart'
