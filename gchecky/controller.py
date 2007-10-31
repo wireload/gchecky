@@ -26,6 +26,16 @@ class html_order(object):
     html = None
 
 class ControllerLevel_1(object):
+    SANDBOX_URLS    = {'CHECKOUT_BUTTON': 'https://sandbox.google.com/checkout/buttons/checkout.gif?merchant_id=%s&w=180&h=46&style=white&variant=text',
+                       'CLIENT_POST_CART':'https://sandbox.google.com/checkout/api/checkout/v2/checkout/Merchant/%s',
+                       'SERVER_POST_CART':'https://sandbox.google.com/checkout/api/checkout/v2/merchantCheckout/Merchant/%s',
+                       'ORDER_PROCESSING':'https://sandbox.google.com/checkout/api/checkout/v2/request/Merchant/%s'
+                       }
+    PRODUCTION_URLS = {'CHECKOUT_BUTTON': 'https://checkout.google.com/buttons/checkout.gif?merchant_id=%s&w=180&h=46&style=white&variant=text',
+                       'CLIENT_POST_CART':'https://checkout.google.com/api/checkout/v2/checkout/Merchant/%s',
+                       'SERVER_POST_CART':'https://checkout.google.com/api/checkout/v2/merchantCheckout/Merchant/%s',
+                       'ORDER_PROCESSING':'https://checkout.google.com/api/checkout/v2/request/Merchant/%s'
+                       }
     # Specify all the needed information such as merchant account credentials:
     #   - sandbox or production
     #   - google vendor ID
@@ -34,17 +44,24 @@ class ControllerLevel_1(object):
         self.vendor_id = vendor_id
         self.merchant_key = merchant_key
         self.is_sandbox = is_sandbox
-        self.www_prefix = (is_sandbox and 'sandbox') or 'www'
 
-    def get_cart_post_url(self):
-        POST_CART_URL = 'https://%s.google.com/checkout/cws/v2/Merchant/%s/checkout'
-        return POST_CART_URL % ((self.is_sandbox and 'sandbox') or 'www',
-                                self.vendor_id)
+    def get_url(self, tag):
+        urls = (self.is_sandbox and self.SANDBOX_URLS
+                              ) or self.PRODUCTION_URLS
+        if urls.has_key(tag):
+            return urls[tag]
+        raise Exception('Unknown url tag "' + tag + '"')
 
-    def get_cart_post_button(self):
-        POST_CART_BUTTON = 'http://%s.google.com/checkout/buttons/checkout.gif?merchant_id=%s&w=180&h=46&style=white&variant=text&loc=en_US'
-        return POST_CART_BUTTON % ((self.is_sandbox and 'sandbox') or 'www',
-                                   self.vendor_id)
+    def get_client_post_cart_url(self):
+        return self.get_url('CLIENT_POST_CART_URL') % (self.vendor_id,)
+    get_cart_post_url = get_client_post_cart_url
+
+    def get_server_post_cart_url(self):
+        return self.get_url('SERVER_POST_CART_URL') % (self.vendor_id,)
+
+    def get_checkout_button_url(self):
+        return self.get_url('CHECKOUT_BUTTON') % (self.vendor_id,)
+    get_cart_post_button = get_checkout_button_url
 
     def create_HMAC_SHA_signature(self, xml_text):
         import hmac, sha
@@ -61,19 +78,18 @@ class ControllerLevel_1(object):
         html.cart = cart64
         html.signature = signature64
         html.url = self.get_cart_post_url()
-        html.button = self.get_cart_post_button()
+        html.button = self.get_checkout_button_url()
         html.xml = cart
         html.html = HTML % (html.url, html.cart, html.signature, html.button)
         return html
 
 class ControllerLevel_2(ControllerLevel_1):
-    def get_api_level2_url(self):
-        API_LEVEL2_URL = 'https://%s.google.com/checkout/cws/v2/Merchant/%s/request'
-        return API_LEVEL2_URL % ((self.is_sandbox and 'sandbox') or 'checkout',
-                                 self.vendor_id)
+    def get_order_processing_url(self):
+        return self.get_url('ORDER_PROCESSING') % (self.vendor_id,)
+    get_api_level2_url = get_order_processing_url
 
     def send_xml(self, msg):
-        req = urllib2.Request(url=self.get_api_level2_url(),
+        req = urllib2.Request(url=self.get_order_processing_url(),
                               data=msg)
         req.add_header('Authorization',
                        'Basic %s' % (b64encode('%s:%s' % (self.vendor_id,
