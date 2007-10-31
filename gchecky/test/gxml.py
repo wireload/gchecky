@@ -79,9 +79,30 @@ class XmlFieldTestCase(unittest.TestCase):
         assert isinstance(result.any6_dom, XmlNode)
         assert unicode(result.any6_xml) == result.any6_xml
         return True
+    def testZipFieldXml(self):
+        class zip_field_test_t(gxml.Document):
+            tag_name = 'zip-field-test-document'
+            any1 = gxml.Zip('zip1', complete=False)
+            any2 = gxml.Zip('zip2', complete=False)
+            any3 = gxml.Zip('zip3', complete=False)
+            any4 = gxml.Zip('zip4', complete=False)
+            any5 = gxml.Zip('zip5', complete=True)
+            any6 = gxml.Zip('zip6', complete=True)
+
+        from xml.dom.Document import Node as XmlNode
+        src = zip_field_test_t(
+                  any1='10014-3433',
+                  any2='10014-34*',
+                  any3='10014-*',
+                  any4='1001*',
+                  any5='10014-34',
+                  any6='75001'
+                  )
+        result = gxml.Document.fromxml(src.toxml())
+        self.ensure_result_equals_source(result, src)
+        return True
     def ensure_result_equals_source(self, result, source):
         for fname in vars(source):
-            print 'checking Field %s' % (fname,)
             equals = hasattr(result, fname) and getattr(source, fname) == getattr(result, fname)
             assert equals, 'Field %s content does not match: "%s" vs "%s"' % (
                               fname,
@@ -92,6 +113,7 @@ def xmlFieldSuite():
     suite = unittest.TestSuite()
     suite.addTest(XmlFieldTestCase('testDeconstructPath'))
     suite.addTest(XmlFieldTestCase('testAnyFieldXml'))
+    suite.addTest(XmlFieldTestCase('testZipFieldXml'))
     return suite
 
 if __name__ == '__main__':

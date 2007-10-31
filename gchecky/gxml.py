@@ -26,7 +26,7 @@ to the controller or customize it.
     elements of the XML messages for google checkout API services).
 
 @author: etarassov
-@version: $Revision: $
+@version: $Revision$
 @contact: gchecky at gmail
 """
 
@@ -639,9 +639,9 @@ class Zip(Pattern):
     def __init__(self, path, complete=True, **kwargs):
         import re
         if complete:
-            pattern = re.compile(r'^[0-9a-zA-Z]+$')
+            pattern = re.compile(r'^[0-9a-zA-Z-]+$')
         else:
-            pattern = re.compile(r'^[0-9a-zA-Z\*]+$')
+            pattern = re.compile(r'^[0-9a-zA-Z-\*]+$')
         Pattern.__init__(self, path, pattern=pattern, **kwargs)
 
 class IP(Pattern):
