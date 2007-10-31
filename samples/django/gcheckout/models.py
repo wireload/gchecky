@@ -1,8 +1,14 @@
+import django
 from django.db import models
 from gchecky import model as gmodel
 
 def list_for_django(VALUES):
     return tuple([(value,value) for value in VALUES])
+
+if django.VERSION[0] >= 0 and django.VERSION[1] >= 97:
+    float_field = models.FloatField(blank=False, default=0)
+else:
+    float_field = models.FloatField(max_digits=6, decimal_places=3, blank=False, default=0)
 
 class Cart(models.Model):
     user_id   = models.CharField(maxlength=255, blank=True, null=True)
@@ -12,13 +18,13 @@ class Cart(models.Model):
                                  choices=list_for_django(gmodel.FULFILLMENT_ORDER_STATE))
     payment   = models.CharField(maxlength=32, blank=False,
                                  choices=list_for_django(gmodel.FINANCIAL_ORDER_STATE))
-    total           = models.FloatField(max_digits=6, decimal_places=3, blank=False, default=0)
-    authorized      = models.FloatField(max_digits=6, decimal_places=3, blank=False, default=0)
-    charges         = models.FloatField(max_digits=6, decimal_places=3, blank=False, default=0)
-    charges_pending = models.FloatField(max_digits=6, decimal_places=3, blank=False, default=0)
-    refunds         = models.FloatField(max_digits=6, decimal_places=3, blank=False, default=0)
-    refunds_pending = models.FloatField(max_digits=6, decimal_places=3, blank=False, default=0)
-    chargebacks     = models.FloatField(max_digits=6, decimal_places=3, blank=False, default=0)
+    total           = float_field
+    authorized      = float_field
+    charges         = float_field
+    charges_pending = float_field
+    refunds         = float_field
+    refunds_pending = float_field
+    chargebacks     = float_field
     created   = models.DateTimeField(auto_now_add=True, blank=False)
     updated   = models.DateTimeField(auto_now=True, blank=False)
 
@@ -39,7 +45,7 @@ class Item(models.Model):
     cart        = models.ForeignKey(Cart, blank=False)
     name        = models.CharField(maxlength=255, blank=False, null=True)
     description = models.TextField(blank=False, null=True)
-    price       = models.FloatField(max_digits=6, decimal_places=3, blank=False)
+    price       = float_field
     currency    = models.CharField(maxlength=8, blank=False,
                                    choices=list_for_django(gmodel.CURRENCIES))
     quantity    = models.PositiveIntegerField(blank=False)
