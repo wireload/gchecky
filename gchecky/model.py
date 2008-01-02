@@ -15,7 +15,7 @@ All the comments for the GC API are at U{Google Chackout API documentation
 questions about GC API functioning.
 
 @author: etarassov
-@version: $Revision: $
+@version: $Revision$
 @contact: gchecky at gmail
 """
 
@@ -218,7 +218,7 @@ class new_order_notification_t(abstract_notification_t):
 
 class checkout_redirect_t(gxml.Document):
     tag_name = 'checkout-redirect'
-    serial_number = gxml.ID('checkout-redirect')
+    serial_number = gxml.ID('@serial-number')
     redirect_url  = gxml.Url('redirect-url')
 
 class notification_acknowledgment_t(gxml.Document):
@@ -401,3 +401,9 @@ class diagnosis_t(gxml.Document):
                           gxml.String('string'),
                           required=False)
 
+
+if __name__ == "__name__":
+    def self_test():
+        import doctest
+        doctest.testmod()
+    self_test()
