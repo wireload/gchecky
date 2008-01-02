@@ -359,8 +359,18 @@ class Node(object):
             except Exception, exc:
                 raise Exception('%s\n%s' % ('While reading %s' % (fname,), exc))
 
+    def __eq__(self, other):
+        if not isinstance(other, Node):
+            return False
+        for field in self.fields():
+            if hasattr(self, field) != hasattr(other, field):
+                return False
+            if hasattr(self, field) and getattr(self, field) != getattr(other, field):
+                return False
+        return True
+
 class DocumentManager(NodeManager):
-    """Kepps track of all the L{Document} subclasses. Similar to L{NodeManager}
+    """Keeps track of all the L{Document} subclasses. Similar to L{NodeManager}
     automates tasks needed to be donefor every L{Document} subclass.
 
     The main purpose is to keep the list of all the classes and theirs

@@ -217,6 +217,14 @@ class new_order_notification_t(abstract_notification_t):
     shopping_cart               = gxml.Complex('shopping-cart', shopping_cart_t)
 
 class checkout_redirect_t(gxml.Document):
+    """
+    Try doctests:
+    >>> a = checkout_redirect_t(serial_number='blabla12345',
+    ...                         redirect_url='http://www.somewhere.com')
+    >>> b = gxml.Document.fromxml(a.toxml())
+    >>> a == b
+    True
+    """
     tag_name = 'checkout-redirect'
     serial_number = gxml.ID('@serial-number')
     redirect_url  = gxml.Url('redirect-url')
@@ -402,8 +410,8 @@ class diagnosis_t(gxml.Document):
                           required=False)
 
 
-if __name__ == "__name__":
-    def self_test():
+if __name__ == "__main__":
+    def run_doctests():
         import doctest
         doctest.testmod()
-    self_test()
+    run_doctests()
