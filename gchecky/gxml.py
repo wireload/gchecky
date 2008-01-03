@@ -626,11 +626,49 @@ class Integer(Long):
     pass
 
 class Url(Pattern):
+    """
+    >>> u = Url('dummy')
+    >>> u.validate('http://google.com')
+    True
+    >>> u.validate('https://google.com')
+    True
+    >>> u.validate('http://google.com/')
+    True
+    >>> u.validate('http://google.com/some')
+    True
+    >>> u.validate('http://google.com/some/more')
+    True
+    >>> u.validate('http://google.com/even///more/')
+    True
+    >>> u.validate('http://google.com/url/?with=some&args')
+    True
+    >>> u.validate('http://google.com/empty/args/?')
+    True
+    >>> u.validate('http://google.com/some/;-)?a+b=c&&=11')
+    True
+    >>> u.validate('http:/google.com')
+    False
+    >>> u.validate('mailto://google.com')
+    False
+    >>> u.validate('http://.google.com')
+    False
+    >>> u.validate('http://google..com')
+    False
+    >>> u.validate('http://;-).google.com')
+    False
+    >>> u.validate('https://sandbox.google.com/checkout/view/buy?o=shoppingcart&shoppingcart=515556794648982')
+    True
+    """
     def __init__(self, path, **kwargs):
         import re
-        # The general syntax for URI is:
-        # pattern = re.compile(r'^((ht|f)tp(s?)\:\/\/|~/|/)?([\w]+:\w+@)?([a-zA-Z]{1}([\w\-]+\.)+([\w]{2,5}))(:[\d]{1,5})?((/?\w+/)+|/?)(\w+\.[\w]{3,4})?((\?\w+=\w+)?(&\w+=\w+)*)?')
-        pattern = re.compile(r'^(http(s?)\:\/\/|~/|/)?([\w]+:\w+@)?([a-zA-Z]{1}([\w\-]+\.)+([\w]{2,5}))(:[\d]{1,5})?((/?\w+/)+|/?)(\w+\.[\w]{3,4})?((\?\w+=\w+)?(&\w+=\w+)*)?$')
+        # Regular expression divided into chunks:
+        protocol  = r'((http(s?)|ftp)\:\/\/|~/|/)?'
+        user_pass = r'([\w]+:\w+@)?'
+        domain    = r'([a-zA-Z]{1}([\w\-]+\.)+([\w]{2,5}))'
+        port      = r'(:[\d]{1,5})?'
+        file    = r'(/[\w\.\+-;\(\)]*)*'
+        params    = r'(\?.*)?'
+        pattern = re.compile('^' + protocol + user_pass + domain + port + file + params + '$')
         Pattern.__init__(self, path, pattern=pattern, **kwargs)
 
 class Email(Pattern):
@@ -722,3 +760,8 @@ class Timestamp(Field):
         # 2007-04-23T14:31:54.000Z
         return datetime.fromtimestamp(iso8601.parse(text))
 
+if __name__ == "__main__":
+    def run_doctests():
+        import doctest
+        doctest.testmod()
+    run_doctests()
