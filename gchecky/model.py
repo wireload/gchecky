@@ -1,6 +1,5 @@
-
 """
-Gchecky.model module describes the mapping between Google Checkout API (GC API)
+gchecky.model module describes the mapping between Google Checkout API (GC API)
 XML messages (GC API XML Schema) and data classes.
 
 This module uses L{gchecky.gxml} to automate much of the work so that
@@ -21,6 +20,47 @@ questions about GC API functioning.
 
 from gchecky import gxml
 from gchecky.data import CountryCode, PresentOrNot
+
+def test_document(doc, xml_text):
+    """
+    Method used in doctests: ensures that a document is properly serialized.
+    """
+
+    def normalize_xml(xml_text):
+        """
+        Normalize the xml text to canonical form, so that two xml text chunks
+        could be compared directly as strings.
+        """
+        # If xml misses header, then add it.
+        if len(xml_text) < 2 or xml_text[0:2] != "<?":
+            xml_text = "<?xml version='1.0' encoding='UTF-8'?>\n" + xml_text
+        from xml.dom.ext.reader import Sax2
+        reader = Sax2.Reader()
+        doc = reader.fromString(xml_text)
+        import StringIO
+        output = StringIO.StringIO()
+        from xml.dom.ext import PrettyPrint
+        PrettyPrint(doc, stream=output)
+        text = output.getvalue()
+        output.close()
+        return text
+
+    expected_xml = normalize_xml(xml_text)
+    obtained_xml = normalize_xml(doc.toxml())
+
+    if expected_xml != obtained_xml:
+        print "Expected:\n\n%s\n\nGot:\n\n%s\n" % (expected_xml, obtained_xml)
+
+def test_node(node, xml_text):
+    """
+    Method used in doctests. Ensure that a node is properly serialized.
+    """
+    class Dummy(gxml.Document):
+        tag_name='dummy'
+        data=gxml.Complex('node', node.__class__, required=True)
+    test_document(Dummy(data=node),
+                  "<dummy xmlns='http://checkout.google.com/schema/2'>%s</dummy>" % (xml_text,))
+
 
 CURRENCIES = ('USD', 'GBP')
 
@@ -58,6 +98,33 @@ class tax_area_t(gxml.Node):
     us_country_area = gxml.String('us-country-area/country-area', values=('CONTINENTAL_48', 'FULL_50_STATES', 'ALL'), required=False) # enum('CONTINENTAL_48', 'FULL_50_STATES', 'ALL')
 
 class areas_t(gxml.Node):
+    """
+    Represents a list of regions.
+
+    >>> test_node(
+    ...   areas_t(
+    ...     states = ['LA', 'NY'],
+    ...     country_areas = ['ALL', 'CONTINENTAL_48']
+    ...   )
+    ... ,
+    ... '''
+    ... <node>
+    ... <us-state-area>
+    ...   <state>LA</state>
+    ... </us-state-area>
+    ... <us-state-area>
+    ...   <state>NY</state>
+    ... </us-state-area>
+    ... <us-country-area>
+    ...   <country-area>ALL</country-area>
+    ... </us-country-area>
+    ... <us-country-area>
+    ...   <country-area>CONTINENTAL_48</country-area>
+    ... </us-country-area>
+    ... </node>
+    ... '''
+    ... )
+    """
     states        = gxml.List('', gxml.String('us-state-area/state'), required=False)
     zip_patterns  = gxml.List('', gxml.String('us-zip-area/zip-pattern'), required=False) # regex: [a-zA-Z0-9_]+\*? Note the optional asterisk
     country_areas = gxml.List('', gxml.String('us-country-area/country-area'), values=('CONTINENTAL_48', 'FULL_50_STATES', 'ALL'), required=False) # enum('CONTINENTAL_48', 'FULL_50_STATES', 'ALL')
@@ -98,6 +165,41 @@ class merchant_calculations_t(gxml.Node):
     accept_gift_certificates  = gxml.Boolean('accept-gift-certificates', required=False)
 
 class shipping_option_t(gxml.Node):
+    """
+    Represents information about shipping costs.
+
+    >>> test_node(
+    ...   shipping_option_t(
+    ...       name = 'Testing',
+    ...         price = price_t(
+    ...             currency = 'GBP',
+    ...             value = 9.99,
+    ...             ),
+    ...         allowed_areas = allowed_areas_t(
+    ...             world_area = True,
+    ...             ),
+    ...         excluded_areas = excluded_areas_t(
+    ...             postal_areas = [postal_area_t(
+    ...                 country_code = 'US',
+    ...                 )],
+    ...             ),
+    ...         )
+    ... , '''
+    ... <node name='Testing'>
+    ...   <price currency='GBP'>9.990000</price>
+    ...   <shipping-restrictions>
+    ...     <allowed-areas>
+    ...       <world-area/>
+    ...     </allowed-areas>
+    ...     <excluded-areas>
+    ...       <postal-area>
+    ...         <country-code>US</country-code>
+    ...       </postal-area>
+    ...     </excluded-areas>
+    ...   </shipping-restrictions>
+    ... </node>
+    ... ''')
+    """
     name = gxml.String('@name') # Attribute, len <= 255, not-empty
     price = gxml.Complex('price', price_t)
     allowed_areas  = gxml.Complex('shipping-restrictions/allowed-areas', allowed_areas_t, required=False)
@@ -131,6 +233,19 @@ class shopping_cart_t(gxml.Node):
     merchant_private_data = gxml.Any('merchant-private-data',
                                      save_node_and_xml=True,
                                      required=False)
+
+class hello_t(gxml.Document):
+    """
+    Represents a simple test that verifies that your server communicates
+    properly with Google Checkout. The fourth step of
+    the U{Getting Started with Google Checkout<http://code.google.com/apis/checkout/developer/index.html#integration_overview>}
+    section of the Developer's Guide explains how to execute this test.
+
+    >>> test_document(hello_t(),
+    ...               "<hello xmlns='http://checkout.google.com/schema/2'/>"
+    ... )
+    """
+    tag_name='hello'
 
 class checkout_shopping_cart_t(gxml.Document):
     tag_name = 'checkout-shopping-cart'
