@@ -1,6 +1,4 @@
 from xml import dom
-
-from xml.dom import implementation
 from xml.dom import implementation
 
 
