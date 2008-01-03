@@ -700,9 +700,42 @@ class Zip(Pattern):
         Pattern.__init__(self, path, pattern=pattern, **kwargs)
 
 class IP(Pattern):
+    """
+    Match any IPv4 address.
+
+    >>> ip = IP('dummy')
+    >>> ip.validate('127.0.0.1')
+    True
+    >>> ip.validate('10.0.0.1')
+    True
+    >>> ip.validate('255.17.101.199')
+    True
+    >>> ip.validate('1.1.1.1')
+    True
+    >>> ip.validate('1.2.3')
+    False
+    >>> ip.validate('1.2.3.4.5')
+    False
+    >>> ip.validate('1.2.3.256')
+    False
+    >>> ip.validate('1.2.3.-1')
+    False
+    >>> ip.validate('1.2..3')
+    False
+    >>> ip.validate('.1.2.3.4')
+    False
+    >>> ip.validate('1.2.3.4.')
+    False
+    >>> ip.validate('1.2.3.-')
+    False
+    >>> ip.validate('01.2.3.4')
+    False
+    >>> ip.validate('1.02.3.4')
+    False
+    """
     def __init__(self, path, **kwargs):
         import re
-        num_pattern = r'(([1-9][0-9]?)|(1[0-9]{2})|(2((5[0-5])|([0-4][0-9]))))'
+        num_pattern = r'(0|([1-9][0-9]?)|(1[0-9]{2})|(2((5[0-5])|([0-4][0-9]))))'
         pattern = re.compile(r'^%s\.%s\.%s\.%s$' % (num_pattern,num_pattern,num_pattern,num_pattern))
         Pattern.__init__(self, path, pattern=pattern, **kwargs)
 
