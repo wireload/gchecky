@@ -167,7 +167,7 @@ class order_adjustment_t(gxml.Node):
     adjustment_total                = gxml.Complex('adjustment-total', price_t, required=False)
     merchant_calculation_successful = gxml.Boolean('merchant-calculation-successful', required=False)
     merchant_codes                  = gxml.Complex('merchant-codes', merchant_codes_t, required=False)
-    shipping                        = gxml.Complex('shipping', shipping_in_order_adjustment_t, required=True)
+    shipping                        = gxml.Complex('shipping', shipping_in_order_adjustment_t, required=False)
     total_tax                       = gxml.Complex('total-tax', price_t, required=False)
 
 class address_t(gxml.Node):
