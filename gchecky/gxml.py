@@ -163,14 +163,21 @@ class Field(object):
         """Override this method in subclasses"""
         raise Exception('Abstract method of %s' % self.__class__)
 
-    def create_node_for_path(self, parent):
+    def create_node_for_path(self, parent, reuse_nodes=True):
         """Create (if needed) a XML DOM node that will hold this field data.
         @param parent: The parent node that should hold this fields data.
+        @param reuse_nodes: Reuse the existing required node if it is already present.
         @return: Return the XML DOM node to hold this field's data. The node
           created as a subnode (or an attribute, or a grand-node, etc.) of
           parent.
         """
         for nname in self.path_nodes:
+            # Should we reuse an existing node?
+            if reuse_nodes:
+                nodes = parent.getElementsByTagName(nname)
+                if nodes.length == 1:
+                    parent = nodes[0]
+                    continue
             node = parent.ownerDocument.createElement(nname)
             parent.appendChild(node)
             parent = node
@@ -495,7 +502,7 @@ class List(Field):
                 continue
             if not self.list_item.validate(item_data):
                 raise Exception('Invalid data! %s in %s' % (item_data, self.list_item))
-            inode = self.list_item.create_node_for_path(node) 
+            inode = self.list_item.create_node_for_path(node, reuse_nodes=False)
             self.list_item.save(inode, item_data)
 
     def load(self, node):
