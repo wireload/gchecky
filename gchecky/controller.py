@@ -252,5 +252,5 @@ class ControllerLevel_2(ControllerLevel_1):
     def on_checkout_redirect(self, notification, order_id):
         raise Exception('We should never recieve this... this is a bug.')
 
-
+# Just an alias with a shorter name.
 Controller = ControllerLevel_2
