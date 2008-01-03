@@ -259,7 +259,7 @@ class NodeManager(type):
         """Dynamically do some stuff on a Node subclass 'creation'.
         
         Specifically do the following:
-          - create the class (via the standard L{type.__new__})
+          - create the class (via the standard type.__new__)
           - retrieve all the fields of the class (its own and inherited)
           - store the class reference in the L{nodes} dictionary
           - give the class itself the access to its field list
@@ -691,6 +691,21 @@ class Phone(Pattern):
         Pattern.__init__(self, path, pattern=pattern, **kwargs)
 
 class Zip(Pattern):
+    """
+    Represents a zip code.
+
+    >>> zip = Zip('dummy')
+    >>> zip.validate('94043')
+    True
+    >>> zip.validate('abCD123')
+    True
+    >>> zip.validate('123*')
+    False
+
+    >>> zip_pattern = Zip('dummy', complete=False)
+    >>> zip_pattern.validate('SW*')
+    True
+    """
     def __init__(self, path, complete=True, **kwargs):
         import re
         if complete:
@@ -701,7 +716,9 @@ class Zip(Pattern):
 
 class IP(Pattern):
     """
-    Match any IPv4 address.
+    Represents an IP address.
+
+    Currently only IPv4 addresses in decimal notation are accepted.
 
     >>> ip = IP('dummy')
     >>> ip.validate('127.0.0.1')
