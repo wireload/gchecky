@@ -3,7 +3,7 @@ import traceback
 from gcheckout.models import Cart, Item, Message
 
 from gchecky import model as gmodel
-from gchecky.controller import Controller, ControllerLevel_2, ProcessingException
+from gchecky.controller import Controller, ProcessingException
 from gchecky.gxml import Document
 
 # This is a helper class that should not be used directly by user code.
