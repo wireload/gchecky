@@ -10,7 +10,7 @@ for scheme in INSTALL_SCHEMES.values():
 
 version = __import__('gchecky').version()
 
-setup(name='Gchecky',
+setup(name='gchecky',
       version=version,
       url='http://gchecky.googlecode.com',
       author='Evgeniy Tarassov',
