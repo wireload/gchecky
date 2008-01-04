@@ -56,6 +56,7 @@ def version():
     human_version = '.'.join([str(v) for v in VERSION[:-1]])
     # For maintenance versions replace the minor number by SVN revision.
     if VERSION[-1]:
+        rev = None
         # Do as django does - try to manually parse svn/entries file:
         entries_path = '%s/.svn/entries' % (__path__[0])
         if os.path.exists(entries_path):
