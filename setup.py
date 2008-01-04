@@ -1,32 +1,23 @@
-from distutils.command.install import INSTALL_SCHEMES
+#!/usr/bin/python
 from distutils.core import setup
-
-import sys
 
 # Tell distutils to put the data_files in platform-specific installation
 # locations. See here for an explanation:
 # http://groups.google.com/group/comp.lang.python/browse_thread/thread/35ec7b2fed36eaec/2105ee4d9e8042cb
+from distutils.command.install import INSTALL_SCHEMES
 for scheme in INSTALL_SCHEMES.values():
     scheme['data'] = scheme['purelib']
 
-## Small hack for working with bdist_wininst.
-## See http://mail.python.org/pipermail/distutils-sig/2004-August/004134.html
-#if len(sys.argv) > 1 and sys.argv[1] == 'bdist_wininst':
-#    for file_info in data_files:
-#        file_info[0] = '/PURELIB/%s' % file_info[0]
-
+version = __import__('gchecky').version()
 
 setup(name='Gchecky',
-      version='0.1',
-      url='http://code.google.com/p/gchecky/',
+      version=version,
+      url='http://gchecky.googlecode.com',
       author='Evgeniy Tarassov',
       author_email='etarassov@gmail.com',
-      description='Python wrapper for Google Checkout API',
+      description='Python wrapper for Google Checkout API Level 2',
       license='Apache License 2.0',
-      packages=['gchecky', 'gchecky_sample_django', 'gchecky_sample_gbutton'],
-      package_dir = {'gchecky_sample_django':'samples/django',
-                     'gchecky_sample_gbutton':'samples/gbutton'},
-      package_data={'gchecky':['docs/*.txt','docs/*.html']},
+      packages=['gchecky', 'gchecky.test'],
       data_files=[],
       scripts=[],
 )
