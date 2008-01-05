@@ -247,6 +247,23 @@ class hello_t(gxml.Document):
     """
     tag_name='hello'
 
+class bye_t(gxml.Document):
+    """
+    Represents a response that indicates that Google correctly received
+    a <hello> request.
+
+    >>> test_document(
+    ...     bye_t(serial_number="7315dacf-3a2e-80d5-aa36-8345cb54c143")
+    ... ,
+    ...     '''
+    ...     <bye xmlns="http://checkout.google.com/schema/2"
+    ...           serial-number="7315dacf-3a2e-80d5-aa36-8345cb54c143" />
+    ...     '''
+    ... )
+    """
+    tag_name = 'bye'
+    serial_number = gxml.ID('@serial-number')
+
 class checkout_shopping_cart_t(gxml.Document):
     tag_name = 'checkout-shopping-cart'
     shopping_cart                = gxml.Complex('shopping-cart', shopping_cart_t)
@@ -382,13 +399,31 @@ class charge_order_t(abstract_order_t):
 class refund_order_t(abstract_order_t):
     tag_name = 'refund-order'
     amount  = gxml.Complex('amount', price_t, required=False)
-    comment = gxml.String('comment', required=False)
-    reason  = gxml.String('reason')
+    comment = gxml.String('comment', maxlength=140, required=False)
+    reason  = gxml.String('reason', maxlength=140)
 
 class cancel_order_t(abstract_order_t):
+    """
+    Represents an order that should be canceled. A <cancel-order> command
+    sets the financial-order-state and the fulfillment-order-state to canceled.
+
+    >>> test_document(
+    ...     cancel_order_t(google_order_number = "841171949013218",
+    ...                    comment = 'Buyer found a better deal.',
+    ...                    reason = 'Buyer cancelled the order.'
+    ...     )
+    ... ,
+    ...     '''
+    ...     <cancel-order xmlns="http://checkout.google.com/schema/2" google-order-number="841171949013218">
+    ...       <comment>Buyer found a better deal.</comment>
+    ...       <reason>Buyer cancelled the order.</reason>
+    ...     </cancel-order>
+    ...     '''
+    ... )
+    """
     tag_name = 'cancel-order'
-    comment = gxml.String('comment', required=False)
-    reason  = gxml.String('reason')
+    comment = gxml.String('comment', maxlength=140, required=False)
+    reason  = gxml.String('reason', maxlength=140)
 
 class authorize_order_t(abstract_order_t):
     tag_name = 'authorize-order'
@@ -412,6 +447,30 @@ class deliver_order_t(abstract_order_t):
     send_email    = gxml.Boolean('send-email', required=False)
 
 class add_tracking_data_t(abstract_order_t):
+    """
+    Represents a tag containing a request to add a shipper's tracking number
+    to an order.
+
+    >>> test_document(
+    ...     add_tracking_data_t(
+    ...         google_order_number = '841171949013218',
+    ...         tracking_data = tracking_data_t(
+    ...             carrier = 'UPS',
+    ...             tracking_number = 'Z9842W69871281267'
+    ...         )
+    ...     )
+    ... ,
+    ...     '''
+    ...     <add-tracking-data xmlns="http://checkout.google.com/schema/2"
+    ...                        google-order-number="841171949013218">
+    ...       <tracking-data>
+    ...         <tracking-number>Z9842W69871281267</tracking-number>
+    ...         <carrier>UPS</carrier>
+    ...       </tracking-data>
+    ...     </add-tracking-data>
+    ...     '''
+    ... )
+    """
     tag_name='add-tracking-data'
     tracking_data = gxml.Complex('tracking-data', tracking_data_t)
 
@@ -421,12 +480,46 @@ class send_buyer_message_t(abstract_order_t):
     message    = gxml.String('message')
 
 class archive_order_t(abstract_order_t):
+    """
+    Represents a request to archive a particular order. You would archive
+    an order to remove it from your Merchant Center Inbox, indicating that
+    the order has been delivered.
+
+    >>> test_document(archive_order_t(google_order_number = '841171949013218'),
+    ...     '''<archive-order xmlns="http://checkout.google.com/schema/2"
+    ...                       google-order-number="841171949013218" />'''
+    ... )
+    """
     tag_name='archive-order'
 
 class unarchive_order_t(abstract_order_t):
     tag_name='unarchive-order'
 
 class charge_amount_notification_t(abstract_notification_t):
+    """
+    Represents information about a successful charge for an order.
+
+    >>> from datetime import datetime
+    >>> from xml.utils import iso8601
+    >>> test_document(
+    ...     charge_amount_notification_t(
+    ...         serial_number='95d44287-12b1-4722-bc56-cfaa73f4c0d1',
+    ...         google_order_number = '841171949013218',
+    ...         timestamp = datetime.fromtimestamp(iso8601.parse('2006-03-18T18:25:31.593Z')),
+    ...         latest_charge_amount = price_t(currency='USD', value=2226.06),
+    ...         total_charge_amount = price_t(currency='USD', value=2226.06)
+    ...     )
+    ... ,
+    ...     '''
+    ...     <charge-amount-notification xmlns="http://checkout.google.com/schema/2" serial-number="95d44287-12b1-4722-bc56-cfaa73f4c0d1">
+    ...       <latest-charge-amount currency="USD">226.06</latest-charge-amount>
+    ...       <google-order-number>841171949013218</google-order-number>
+    ...       <total-charge-amount currency="USD">226.06</total-charge-amount>
+    ...       <timestamp>2006-03-18T18:25:31.593Z</timestamp>
+    ...     </charge-amount-notification>
+    ...     '''
+    ... )
+    """
     tag_name='charge-amount-notification'
     latest_charge_amount = gxml.Complex('latest-charge-amount', price_t)
     total_charge_amount  = gxml.Complex('total-charge-amount', price_t)
@@ -510,6 +603,28 @@ class ok_t(gxml.Document):
     tag_name = 'ok'
 
 class error_t(gxml.Document):
+    """
+    Represents a response containing information about an invalid API request.
+    The information is intended to help you debug the problem causing the error.
+
+    >>> test_document(
+    ...     error_t(serial_number = '3c394432-8270-411b-9239-98c2c499f87f',
+    ...             error_message='Bad username and/or password for API Access.',
+    ...             warning_messages = ['IP address is suspicious.',
+    ...                                 'MAC address is shadowed.']
+    ...     )
+    ... ,
+    ... '''
+    ... <error xmlns="http://checkout.google.com/schema/2" serial-number="3c394432-8270-411b-9239-98c2c499f87f">
+    ...   <error-message>Bad username and/or password for API Access.</error-message>
+    ...   <warning-messages>
+    ...     <string>IP address is suspicious.</string>
+    ...     <string>MAC address is shadowed.</string>
+    ...   </warning-messages>
+    ... </error>
+    ... '''
+    ... )
+    """
     tag_name = 'error'
     serial_number    = gxml.ID('@serial-number')
     error_message    = gxml.String('error-message')
@@ -518,12 +633,31 @@ class error_t(gxml.Document):
                                  required=False)
 
 class diagnosis_t(gxml.Document):
+    """
+    Represents a diagnostic response to an API request. The diagnostic
+    response contains the parsed XML in your request as well as any warnings
+    generated by your request.
+    Please see the U{Validating XML Messages to Google Checkout
+    <http://code.google.com/apis/checkout/developer/index.html#validating_xml_messages>}
+    section for more information about diagnostic requests and responses.
+    """
     tag_name = 'diagnosis'
     input_xml = gxml.Any('input-xml')
     warnings  = gxml.List('warnings',
                           gxml.String('string'),
                           required=False)
 
+class demo_failure_t(gxml.Document):
+    """
+    >>> test_document(
+    ...     demo_failure_t(message='Demo Failure Message')
+    ... ,
+    ...     '''<demo-failure xmlns="http://checkout.google.com/schema/2"
+    ...                      message="Demo Failure Message" />'''
+    ... )
+    """
+    tag_name = 'demo-failure'
+    message = gxml.String('@message', maxlength=25)
 
 if __name__ == "__main__":
     def run_doctests():
