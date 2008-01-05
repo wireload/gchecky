@@ -160,10 +160,12 @@ class DjangoGControllerImpl(Controller):
         raise exception
 
     # Log all our messages to (and the responses from) google checkout services
-    def process_message_result(self, message_xml, response_xml):
+    def process_message_result(self, message_xml, response_xml, diagnose):
         try:
-            res = super(DjangoGControllerImpl, self).process_message_result(message_xml,
-                                                                        response_xml)
+            res = super(DjangoGControllerImpl,
+                        self).process_message_result(message_xml,
+                                                     response_xml,
+                                                     diagnose)
             self.log_message_to_google(message_xml, response_xml)
             return res
         except ProcessingException, exc:

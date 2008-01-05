@@ -45,22 +45,25 @@ class ControllerLevel_1(object):
         self.merchant_key = merchant_key
         self.is_sandbox = is_sandbox
 
-    def get_url(self, tag):
+    def get_url(self, tag, diagnose):
         urls = (self.is_sandbox and self.SANDBOX_URLS
                               ) or self.PRODUCTION_URLS
         if urls.has_key(tag):
-            return urls[tag]
+            url = urls[tag]
+            if diagnose:
+                url += '/diagnose'
+            return url
         raise Exception('Unknown url tag "' + tag + '"')
 
-    def get_client_post_cart_url(self):
-        return self.get_url('CLIENT_POST_CART_URL') % (self.vendor_id,)
+    def get_client_post_cart_url(self, diagnose):
+        return self.get_url('CLIENT_POST_CART_URL', diagnose) % (self.vendor_id,)
     get_cart_post_url = get_client_post_cart_url
 
-    def get_server_post_cart_url(self):
-        return self.get_url('SERVER_POST_CART_URL') % (self.vendor_id,)
+    def get_server_post_cart_url(self, diagnose):
+        return self.get_url('SERVER_POST_CART_URL', diagnose) % (self.vendor_id,)
 
-    def get_checkout_button_url(self):
-        return self.get_url('CHECKOUT_BUTTON') % (self.vendor_id,)
+    def get_checkout_button_url(self, diagnose):
+        return self.get_url('CHECKOUT_BUTTON', diagnose) % (self.vendor_id,)
     get_cart_post_button = get_checkout_button_url
 
     def create_HMAC_SHA_signature(self, xml_text):
@@ -69,7 +72,7 @@ class ControllerLevel_1(object):
 
     # Specify order_id to track the order
     # The order_id will be send back to us by google with order verification
-    def prepare_order(self, order, order_id=None):
+    def prepare_order(self, order, order_id=None, diagnose=False):
         cart = order.toxml()
 
         cart64 = b64encode(cart)
@@ -77,19 +80,19 @@ class ControllerLevel_1(object):
         html = html_order()
         html.cart = cart64
         html.signature = signature64
-        html.url = self.get_cart_post_url()
-        html.button = self.get_checkout_button_url()
+        html.url = self.get_cart_post_url(diagnose)
+        html.button = self.get_checkout_button_url(diagnose)
         html.xml = cart
         html.html = HTML % (html.url, html.cart, html.signature, html.button)
         return html
 
 class ControllerLevel_2(ControllerLevel_1):
-    def get_order_processing_url(self):
-        return self.get_url('ORDER_PROCESSING') % (self.vendor_id,)
+    def get_order_processing_url(self, diagnose):
+        return self.get_url('ORDER_PROCESSING', diagnose) % (self.vendor_id,)
     get_api_level2_url = get_order_processing_url
 
-    def send_xml(self, msg):
-        req = urllib2.Request(url=self.get_order_processing_url(),
+    def send_xml(self, msg, diagnose=False):
+        req = urllib2.Request(url=self.get_order_processing_url(diagnose),
                               data=msg)
         req.add_header('Authorization',
                        'Basic %s' % (b64encode('%s:%s' % (self.vendor_id,
@@ -102,26 +105,45 @@ class ControllerLevel_2(ControllerLevel_1):
             response = error.fp.read()
         return response
 
-    def send_message(self, message):
+    def send_message(self, message, diagnose=False):
         message_xml = message.toxml()
-        response_xml = self.send_xml(message_xml)
-        return self.process_message_result(message_xml, response_xml)
+        response_xml = self.send_xml(message_xml, diagnose)
+        return self.process_message_result(message_xml, response_xml, diagnose)
 
-    def process_message_result(self, message_xml, response_xml):
+    def process_message_result(self, message_xml, response_xml, diagnose):
         doc = gxml.Document.fromxml(response_xml)
-        if doc.__class__ != gmodel.request_received_t:
-            if doc.__class__ != gmodel.error_t:
-                # OMG! Unknown message!
-                raise Exception, 'SEVERE ERROR! THE GCHECKY LIBRARY DOES NOT FUNCTION PROPERLY'
-            msg = 'Error message from GCheckout API:\n%s' % (doc.error_message, )
-            if doc.warning_messages:
-                tmp = ''
-                for warning in doc.warning_messages:
-                    tmp += '\n%s' % (warning,)
-                msg += ('Additional warnings:%s' % (tmp,))
-            raise Exception(msg)
-        if doc.__class__ != gmodel.request_received_t:
-            raise Exception("%s" % (doc.serial_number,))
+
+        GCHECKY_DOES_NOT_WORK = 'SEVERE ERROR! THE GCHECKY LIBRARY DOES NOT FUNCTION PROPERLY'
+
+        if diagnose:
+            # It has to be a 'diagnosis' response, otherwise... omg!.. panic!...
+            if doc.__class__ != gmodel.diagnosis_t:
+                raise Exception(GCHECKY_DOES_NOT_WORK)
+            return doc
+
+        # If the response is 'ok' or 'bye' just return, because its good
+        if doc.__class__ == gmodel.request_received_t:
+            return
+        if doc.__class__ == gmodel.bye_t:
+            return doc
+
+        # It's not 'ok' so it has to be 'error', otherwise it's an error
+        if doc.__class__ != gmodel.error_t:
+            raise Exception(GCHECKY_DOES_NOT_WORK)
+
+        # 'error' - process it by throwing an exception with error/warning text
+        msg = 'Error message from GCheckout API:\n%s' % (doc.error_message, )
+        if doc.warning_messages:
+            tmp = ''
+            for warning in doc.warning_messages:
+                tmp += '\n%s' % (warning,)
+            msg += ('Additional warnings:%s' % (tmp,))
+        raise Exception(msg)
+
+    def hello(self):
+        doc = self.send_message(gmodel.hello_t())
+        if doc.__class__ != gmodel.bye_t:
+            raise Exception("Expected <bye/> but got %s" % (doc.__class__,))
 
     def archive_order(self, order_id):
         self.send_message(
