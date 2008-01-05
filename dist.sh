@@ -24,3 +24,6 @@ python setup.py bdist bdist_wininst
 
 # clean up
 python setup.py clean
+
+# previous does not seem to clean all temporary files, but force it
+rm -rf build/bdist* build/lib*
