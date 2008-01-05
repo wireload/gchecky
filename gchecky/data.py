@@ -257,8 +257,12 @@ COUNTRY_CODES = {
 
 
 class CountryCode(String):
+    from gchecky.gxml import apply_parent_validation
+    @apply_parent_validation(String, "Country Code: ")
     def validate(self, data):
-        return COUNTRY_CODES.has_key(self.data2str(data))
+        if not COUNTRY_CODES.has_key(self.data2str(data)):
+            return "Unknown country code."
+        return True
     def data2str(self, data):
         return str(data).upper()
     def str2data(self, text):
@@ -266,8 +270,12 @@ class CountryCode(String):
 
 
 class PresentOrNot(String):
+    from gchecky.gxml import apply_parent_validation
+    @apply_parent_validation(String, "PresentOrNot: ")
     def validate(self, data):
-        return (data is None) or (data is True)
+        if (data is not None) and (data is not True):
+            return "PresentOrNot could only be equal to True/None."
+        return True
     def data2str(self, data):
         return None
     def str2data(self, text):

@@ -152,7 +152,16 @@ class Field(object):
         return self.str2data(str)
 
     def validate(self, data):
-        """By default any data is valid"""
+        """
+        Validate data according to this fields parameters.
+
+        @return True if data is ok, otherwise return a string (!) describing
+                why the data is invalid.
+
+        Note that this method returns either True or an error string, not False!
+
+        The Field class considers any data as valid and returns True.
+        """
         return True
 
     def data2str(self, data):
@@ -331,8 +340,8 @@ class Node(object):
             if data is None:
                 if field.required: raise Exception('Field <%s> is required, but data for it is None' % (fname,))
                 continue
-            if (data != '' or not field.empty) and not field.validate(data):
-                raise Exception('Invalid data for <%s> in %s' % (fname, data)) 
+            if (data != '' or not field.empty) and field.validate(data) != True:
+                raise Exception("Invalid data for <%s>: '%s'. Reason: %s" % (fname, data, field.validate(data))) 
             field.save(field.create_node_for_path(node), data)
 
     def read(self, node):
@@ -360,8 +369,8 @@ class Node(object):
                     if field.required and not field.empty:
                         raise Exception('Field <%s> can not be empty, but data for it is ""' % (fname,))
                 else:
-                    if not field.validate(data):
-                        raise Exception('Invalid data for <%s>: %s' % (fname, data))
+                    if field.validate(data) != True:
+                        raise Exception("Invalid data for <%s>: '%s'. Reason: %s" % (fname, data, field.validate(data)))
                 setattr(self, fname, data)
             except Exception, exc:
                 raise Exception('%s\n%s' % ('While reading %s' % (fname,), exc))
@@ -488,7 +497,7 @@ class List(Field):
         """Checks that the data is a valid sequence."""
         from operator import isSequenceType
         if not isSequenceType(data):
-            raise Exception('List data has to be a sequence (%s)' % (data,))
+            return "List data has to be a sequence."
         return True
 
     def save(self, node, data):
@@ -500,8 +509,11 @@ class List(Field):
             if item_data is None:
                 if self.list_item.required: raise Exception('Required data is None')
                 continue
-            if not self.list_item.validate(item_data):
-                raise Exception('Invalid data! %s in %s' % (item_data, self.list_item))
+            item_validity = self.list_item.validate(item_data)
+            if item_validity != True:
+                raise Exception("List contains an invalid value '%s': %s" % (item_data,
+                                                                             item_validity))
+            # reuse_nodes=False ensure that list items generate different nodes.
             inode = self.list_item.create_node_for_path(node, reuse_nodes=False)
             self.list_item.save(inode, item_data)
 
@@ -516,8 +528,10 @@ class List(Field):
                 data.append(None)
             else:
                 idata = self.list_item.load(inode)
-                if not self.list_item.validate(idata):
-                    raise Exception('Invalid data! %s in %s' % (idata, self.list_item)) 
+                item_validity = self.list_item.validate(idata)
+                if item_validity != True:
+                    raise Exception("List item can not have value '%s': %s" % (idata,
+                                                                               item_validity)) 
                 data.append(idata)
         return data
 
@@ -548,7 +562,7 @@ class Complex(Field):
     def validate(self, data):
         """Checks if the data is an instance of the L{clazz}."""
         if not isinstance(data, self.clazz):
-            raise Exception('Data(%s) is not of class %s' % (data, self.clazz))
+            return "Data(%s) is not of class %s" % (data, self.clazz)
         return True
 
     def save(self, node, data):
@@ -574,7 +588,31 @@ class String(Field):
     def str2data(self, text):
         return text
     def validate(self, data):
-        return (self.maxlength is None) or len(str(data)) < self.maxlength
+        if (self.maxlength != None) and len(str(data)) >= self.maxlength:
+            return "The string is too long (maxlength=%d)." % (self.maxlength,)
+        return True
+
+def apply_parent_validation(clazz, error_prefix=None):
+    """
+    Decorator to automatically invoke parent class validation before applying
+    custom validation rules. Usage::
+
+        class Child(Parent):
+            @apply_parent_validation(Child, error_prefix="From Child: ")
+            def validate(data):
+                # I can assume now that the parent validation method succeeded.
+                # ...
+    """
+    def decorator(func):
+        def inner(self, data):
+            base_validation = clazz.validate(self, data)
+            if base_validation != True:
+                if error_prefix is not None:
+                    return error_prefix + base_validation
+                return base_validation
+            return func(self, data)
+        return inner
+    return decorator
 
 class Pattern(String):
     """A string matching a pattern.
@@ -586,9 +624,12 @@ class Pattern(String):
         @param pattern: a regular expression describing the format of the data"""
         return super(Pattern, self).__init__(path=path, pattern=pattern, **kwargs)
 
+    @apply_parent_validation(String)
     def validate(self, data):
         """Checks if the pattern matches the data."""
-        return super(Pattern, self).validate(data) and not(self.pattern.match(data) is None)
+        if self.pattern.match(data) is None:
+            return "Does not matches the defined pattern"
+        return True
 
 class Decimal(Field):
     default=0
@@ -646,16 +687,16 @@ class Url(Pattern):
     True
     >>> u.validate('http://google.com/some/;-)?a+b=c&&=11')
     True
-    >>> u.validate('http:/google.com')
-    False
-    >>> u.validate('mailto://google.com')
-    False
-    >>> u.validate('http://.google.com')
-    False
-    >>> u.validate('http://google..com')
-    False
-    >>> u.validate('http://;-).google.com')
-    False
+    >>> u.validate('http:/google.com') != True
+    True
+    >>> u.validate('mailto://google.com') != True
+    True
+    >>> u.validate('http://.google.com') != True
+    True
+    >>> u.validate('http://google..com') != True
+    True
+    >>> u.validate('http://;-).google.com') != True
+    True
     >>> u.validate('https://sandbox.google.com/checkout/view/buy?o=shoppingcart&shoppingcart=515556794648982')
     True
     """
@@ -671,11 +712,19 @@ class Url(Pattern):
         pattern = re.compile('^' + protocol + user_pass + domain + port + file + params + '$')
         Pattern.__init__(self, path, pattern=pattern, **kwargs)
 
+    @apply_parent_validation(Pattern, error_prefix="Url: ")
+    def validate(self, data):
+        return True
+
 class Email(Pattern):
     def __init__(self, path, **kwargs):
         import re
         pattern = re.compile(r'^[a-zA-Z0-9\.\_\%\-\+]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
         Pattern.__init__(self, path, pattern=pattern, **kwargs)
+
+    @apply_parent_validation(Pattern, error_prefix="Email: ")
+    def validate(self, data):
+        return True
 
 class Html(String):
     pass
@@ -690,6 +739,10 @@ class Phone(Pattern):
         pattern = re.compile(r'^[0-9\+\-\(\)\ ]+$')
         Pattern.__init__(self, path, pattern=pattern, **kwargs)
 
+    @apply_parent_validation(Pattern, error_prefix="Phone: ")
+    def validate(self, data):
+        return True
+
 class Zip(Pattern):
     """
     Represents a zip code.
@@ -699,8 +752,8 @@ class Zip(Pattern):
     True
     >>> zip.validate('abCD123')
     True
-    >>> zip.validate('123*')
-    False
+    >>> zip.validate('123*') != True
+    True
 
     >>> zip_pattern = Zip('dummy', complete=False)
     >>> zip_pattern.validate('SW*')
@@ -713,6 +766,10 @@ class Zip(Pattern):
         else:
             pattern = re.compile(r'^[0-9a-zA-Z-\*]+$')
         Pattern.__init__(self, path, pattern=pattern, **kwargs)
+
+    @apply_parent_validation(Pattern, error_prefix="Zip: ")
+    def validate(self, data):
+        return True
 
 class IP(Pattern):
     """
@@ -729,26 +786,26 @@ class IP(Pattern):
     True
     >>> ip.validate('1.1.1.1')
     True
-    >>> ip.validate('1.2.3')
-    False
-    >>> ip.validate('1.2.3.4.5')
-    False
-    >>> ip.validate('1.2.3.256')
-    False
-    >>> ip.validate('1.2.3.-1')
-    False
-    >>> ip.validate('1.2..3')
-    False
-    >>> ip.validate('.1.2.3.4')
-    False
-    >>> ip.validate('1.2.3.4.')
-    False
-    >>> ip.validate('1.2.3.-')
-    False
-    >>> ip.validate('01.2.3.4')
-    False
-    >>> ip.validate('1.02.3.4')
-    False
+    >>> ip.validate('1.2.3') != True
+    True
+    >>> ip.validate('1.2.3.4.5') != True
+    True
+    >>> ip.validate('1.2.3.256') != True
+    True
+    >>> ip.validate('1.2.3.-1') != True
+    True
+    >>> ip.validate('1.2..3') != True
+    True
+    >>> ip.validate('.1.2.3.4') != True
+    True
+    >>> ip.validate('1.2.3.4.') != True
+    True
+    >>> ip.validate('1.2.3.-') != True
+    True
+    >>> ip.validate('01.2.3.4') != True
+    True
+    >>> ip.validate('1.02.3.4') != True
+    True
     """
     def __init__(self, path, **kwargs):
         import re
@@ -756,11 +813,19 @@ class IP(Pattern):
         pattern = re.compile(r'^%s\.%s\.%s\.%s$' % (num_pattern,num_pattern,num_pattern,num_pattern))
         Pattern.__init__(self, path, pattern=pattern, **kwargs)
 
+    @apply_parent_validation(Pattern, error_prefix="IP address: ")
+    def validate(self, data):
+        return True
+
 # TODO
 class ID(String):
     empty = False
+
+    @apply_parent_validation(String, error_prefix="ID: ")
     def validate(self, data):
-        return len(data) > 0
+        if len(data) == 0:
+            return "ID has to be non-empty"
+        return True
 
 class Any(Field):
     """Any text value. This field is tricky. Since any data could be stored in
@@ -788,7 +853,7 @@ class Any(Field):
         except:
             return False
     def validate(self, data):
-        # Always validate this data, since anything is allowed
+        # Always return True, since any data is allowed
         return True
 
 #class DateTime(Field):
@@ -801,7 +866,9 @@ class Any(Field):
 class Timestamp(Field):
     def validate(self, data):
         from datetime import datetime
-        return isinstance(data, datetime)
+        if not isinstance(data, datetime):
+            return "Timestamp has to be an instance of datetime.datetime"
+        return True
     def data2str(self, data):
         return data.isoformat()
     def str2data(self, text):
