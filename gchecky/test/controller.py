@@ -26,8 +26,7 @@ class ControllerTestCase(unittest.TestCase):
         self.controller.refund_order('457164429557231', 0.04,
                                      'Test refunding mechanism', 'Oh la la!')
     def testAuthorizeOrder(self):
-        self.controller.authorize_order('457164429557231',
-                                        do_in_production=True)
+        self.controller.authorize_order('457164429557231')
     def testCancelOrder(self):
         self.controller.cancel_order('566018579274459',
                                      'Test order cancelling', 'Oh al al!')
