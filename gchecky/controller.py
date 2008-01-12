@@ -1,5 +1,4 @@
 from base64 import b64encode
-import urllib2
 
 from gchecky import gxml
 from gchecky import model as gmodel
@@ -18,6 +17,9 @@ class ProcessingException(Exception):
         return Exception.__init__(self, message)
 
 class html_order(object):
+    """
+    TODO:
+    """
     cart = None
     signature = None
     url = None
@@ -26,16 +28,16 @@ class html_order(object):
     html = None
 
 class ControllerLevel_1(object):
-    SANDBOX_URLS    = {'CHECKOUT_BUTTON': 'https://sandbox.google.com/checkout/buttons/checkout.gif?merchant_id=%s&w=180&h=46&style=white&variant=text',
+    __SANDBOX_URLS  = {'CHECKOUT_BUTTON': 'https://sandbox.google.com/checkout/buttons/checkout.gif?merchant_id=%s&w=180&h=46&style=white&variant=text',
                        'CLIENT_POST_CART':'https://sandbox.google.com/checkout/api/checkout/v2/checkout/Merchant/%s',
                        'SERVER_POST_CART':'https://sandbox.google.com/checkout/api/checkout/v2/merchantCheckout/Merchant/%s',
                        'ORDER_PROCESSING':'https://sandbox.google.com/checkout/api/checkout/v2/request/Merchant/%s'
-                       }
-    PRODUCTION_URLS = {'CHECKOUT_BUTTON': 'https://checkout.google.com/buttons/checkout.gif?merchant_id=%s&w=180&h=46&style=white&variant=text',
+                      }
+    __PRODUCTION_URLS={'CHECKOUT_BUTTON': 'https://checkout.google.com/buttons/checkout.gif?merchant_id=%s&w=180&h=46&style=white&variant=text',
                        'CLIENT_POST_CART':'https://checkout.google.com/api/checkout/v2/checkout/Merchant/%s',
                        'SERVER_POST_CART':'https://checkout.google.com/api/checkout/v2/merchantCheckout/Merchant/%s',
                        'ORDER_PROCESSING':'https://checkout.google.com/api/checkout/v2/request/Merchant/%s'
-                       }
+                      }
     # Specify all the needed information such as merchant account credentials:
     #   - sandbox or production
     #   - google vendor ID
@@ -45,9 +47,9 @@ class ControllerLevel_1(object):
         self.merchant_key = merchant_key
         self.is_sandbox = is_sandbox
 
-    def get_url(self, tag, diagnose):
-        urls = (self.is_sandbox and self.SANDBOX_URLS
-                              ) or self.PRODUCTION_URLS
+    def _get_url(self, tag, diagnose):
+        urls = (self.is_sandbox and self.__SANDBOX_URLS
+                              ) or self.__PRODUCTION_URLS
         if urls.has_key(tag):
             url = urls[tag]
             if diagnose:
@@ -56,14 +58,13 @@ class ControllerLevel_1(object):
         raise Exception('Unknown url tag "' + tag + '"')
 
     def get_client_post_cart_url(self, diagnose):
-        return self.get_url('CLIENT_POST_CART_URL', diagnose) % (self.vendor_id,)
-    get_cart_post_url = get_client_post_cart_url
+        return self._get_url('CLIENT_POST_CART', diagnose) % (self.vendor_id,)
 
     def get_server_post_cart_url(self, diagnose):
-        return self.get_url('SERVER_POST_CART_URL', diagnose) % (self.vendor_id,)
+        return self._get_url('SERVER_POST_CART', diagnose) % (self.vendor_id,)
 
     def get_checkout_button_url(self, diagnose):
-        return self.get_url('CHECKOUT_BUTTON', diagnose) % (self.vendor_id,)
+        return self._get_url('CHECKOUT_BUTTON', diagnose) % (self.vendor_id,)
     get_cart_post_button = get_checkout_button_url
 
     def create_HMAC_SHA_signature(self, xml_text):
@@ -80,56 +81,342 @@ class ControllerLevel_1(object):
         html = html_order()
         html.cart = cart64
         html.signature = signature64
-        html.url = self.get_cart_post_url(diagnose)
+        html.url = self.get_client_post_cart_url(diagnose)
         html.button = self.get_checkout_button_url(diagnose)
         html.xml = cart
         html.html = HTML % (html.url, html.cart, html.signature, html.button)
         return html
 
-class ControllerLevel_2(ControllerLevel_1):
-    def get_order_processing_url(self, diagnose):
-        return self.get_url('ORDER_PROCESSING', diagnose) % (self.vendor_id,)
-    get_api_level2_url = get_order_processing_url
+class ControllerContext(object):
+    """
+    """
+    # Indicates the direction: True => we call GC, False => GC calls us
+    outgoing = True
+    # The request XML text
+    xml = None
+    # The request message - one of the classes in gchecky.model module
+    message = None
+    # Indicates that the message being sent is diagnose message (implies outgoing=True).
+    diagnose = False
+    # Associated google order number
+    order_id = None
+    # A serial number assigned by google to this message
+    serial = None
+    # The response message - one of the classes in gchecky.model module
+    response_message = None
+    # The response XML text
+    response_xml = None
 
-    def send_xml(self, msg, diagnose=False):
-        req = urllib2.Request(url=self.get_order_processing_url(diagnose),
-                              data=msg)
+    def __init__(self, outgoing = True):
+        self.outgoing = outgoing
+
+class GcheckyError(Exception):
+    """
+    Base class for exception that could be thrown by gchecky library.
+    """
+    def __init__(self, message, context, origin=None):
+        """
+        @param message String message describing the problem. Can't be empty.
+        @param context An instance of gchecky.controller.ControllerContext
+                       that describes the current request processing context.
+                       Can't be None.
+        @param origin The original exception that caused this exception
+                      to be thrown if any. Could be None.
+        """
+        self.message = message
+        self.context = context
+        self.origin = origin
+        self.traceback = None
+        if origin is not None:
+            from traceback import format_exc
+            self.traceback = format_exc()
+
+    def __unicode__(self):
+        return self.message
+    __str__ = __unicode__
+    __repr__ = __unicode__
+
+class DataError(GcheckyError):
+    """
+    An exception of this class occures whenever there is error in converting
+    python data to/from xml.
+    """
+    pass
+
+class HandlerError(GcheckyError):
+    """
+    An exception of this class occures whenever an exception is thrown
+    from user defined handler.
+    """
+    pass
+
+class SystemError(GcheckyError):
+    """
+    An exception of this class occures whenever there is a system error, such
+    as network being unavailable or DB down.
+    """
+    pass
+
+class LibraryError(GcheckyError):
+    """
+    An exception of this class occures whenever there is a bug encountered
+    in gchecky library. It represents a bug which should be reported as an issue
+    at U{Gchecky issue tracker <http://gchecky.googlecode.com/>}.
+    """
+    pass
+
+class ControllerLevel_2(ControllerLevel_1):
+    def on_xml_sending(self, context):
+        """
+        This hook is called just before sending xml to GC.
+
+        @param context.xml  The xml message to be sent to GC.
+        @param context.url  The exact URL the message is about to be sent.
+        @return     Should return nothing, because the return value is ignored.
+        """
+        pass
+
+    def on_xml_sent(self, context):
+        """
+        This hook is called right after sending xml to GC.
+
+        @param context.xml  The xml message to be sent to GC.
+        @param context.url  The exact URL the message is about to be sent.
+        @param context.response_xml The reply xml of GC.
+        @return Should return nothing, because the return value is ignored.
+        """
+        pass
+
+    def on_message_sending(self, context):
+        """
+        This hook is called just before sending xml to GC.
+
+        @param context.xml  The xml message to be sent to GC.
+        @param context.url  The exact URL the message is about to be sent.
+        @return     Should return nothing, because the return value is ignored.
+        """
+        pass
+
+    def on_message_sent(self, context):
+        """
+        This hook is called right after sending xml to GC.
+
+        @param context.xml The message to be sent to GC (an instance of one
+                   of gchecky.model classes).
+        @param context.response_xml The reply message of GC.
+        @return Should return nothing, because the return value is ignored.
+        """
+        pass
+
+    def on_xml_receiving(self, context):
+        """
+        This hook is called just before processing the received xml from GC.
+
+        @param context.xml  The xml message received from GC.
+        @return     Should return nothing, because the return value is ignored.
+        """
+        pass
+
+    def on_xml_received(self, context):
+        """
+        This hook is called right after processing xml from GC.
+
+        @param context.xml  The xml message received from GC.
+        @param context.response_xml The reply xml to GC.
+        @return Should return nothing, because the return value is ignored.
+        """
+        pass
+
+    def on_message_receiving(self, context):
+        """
+        This hook is called just before processing the received message from GC.
+
+        @param context.message The message received from GC.
+        @return     Should return nothing, because the return value is ignored.
+        """
+        pass
+
+    def on_message_received(self, context):
+        """
+        This hook is called right after processing message from GC.
+
+        @param context.message The message received from GC.
+        @param context.response_message The reply object to GC (either ok_t or error_t).
+        @return Should return nothing, because the return value is ignored.
+        """
+        pass
+
+    def on_retrieve_order(self, order_id, context=None):
+        """
+        This hook is called from message processing code just before calling
+        the corresponding message handler.
+        The idea is to allow user code to load order in one place and then
+        receive the loaded object as parameter in message handler.
+        This method should not throw if order is not found - instead it should
+        return None.
+
+        @param order_id The google order number corresponding to the message
+                received.
+        @return The order object that will be passed to message handlers.
+        """
+        pass
+
+    def handle_new_order(self, message, order_id, context, order=None):
+        """
+        Google sends a new order notification when a buyer places an order
+        through Google Checkout. Before shipping the items in an order,
+        you should wait until you have also received the risk information
+        notification for that order as well as the order state change
+        notification informing you that the order's financial state
+        has been updated to 'CHARGEABLE'.
+        """
+        pass
+
+    def handle_order_state_change(self, message, order_id, context, order=None):
+        pass
+
+    def handle_authorization_amount(self, message, order_id, context, order=None):
+        pass
+
+    def handle_risk_information(self, message, order_id, context, order=None):
+        """
+        Google Checkout sends a risk information notification to provide
+        financial information
+        that helps you to ensure that an order is not fraudulent.
+        """
+        pass
+
+    def handle_charge_amount(self, message, order_id, context, order=None):
+        pass
+
+    def handle_refund_amount(self, message, order_id, context, order=None):
+        pass
+
+    def handle_chargeback_amount(self, message, order_id, context, order=None):
+        pass
+
+    def handle_notification(self, message, order_id, context, order=None):
+        """
+        This handler is called when a message received from GC and when the more
+        specific message handler was not found or returned None (which means
+        it was not able to process the message).
+
+        @param message The message from GC to be processed.
+        @param order_id The google order number for which message is sent.
+        @param order The object loaded by on_retrieve_order(order_id) or None.
+        @return If message was processed successfully then return gmodel.ok_t().
+                If an error occured when proessing, then the method should
+                return any other value (not-None).
+                If the message is of unknown type or can't be processed by
+                this handler then return None.
+        """
+        # By default return None because we don' handle anything
+        pass
+
+    def on_exception(self, exception, context):
+        """
+        By default simply rethrow the exception ignoring context.
+        Could be used for loggin all the processing errors.
+        @param exception The exception that was caught, of (sub)type GcheckyError.
+        @param context The request context where the exception occured.
+        """
+        raise exception
+
+    def __call_handler(self, handler_name, context, *args, **kwargs):
+        if hasattr(self, handler_name):
+            try:
+                handler = getattr(self, handler_name)
+                return handler(context=context, *args, **kwargs)
+            except Exception, e:
+                error = "Exception in user handler '%s': %s" % (handler_name, e)
+                raise HandlerError(message=error,
+                                   context=context,
+                                   origin=e)
+        error="Unknown user handler: '%s'" % (handler_name,)
+        raise HandlerError(message=error, context=context)
+
+    def get_order_processing_url(self, diagnose):
+        return self._get_url('ORDER_PROCESSING', diagnose) % (self.vendor_id,)
+
+    def _send_xml(self, msg, context, diagnose):
+        """
+        The helper method that submits an xml message to GC.
+        """
+        context.diagnose = diagnose
+        url = self.get_order_processing_url(diagnose)
+        context.url = url
+        import urllib2
+        req = urllib2.Request(url=url, data=msg)
         req.add_header('Authorization',
                        'Basic %s' % (b64encode('%s:%s' % (self.vendor_id,
                                                           self.merchant_key)),))
         req.add_header('Content-Type', ' application/xml; charset=UTF-8')
         req.add_header('Accept', ' application/xml; charset=UTF-8')
         try:
+            self.__call_handler('on_xml_sending', context=context)
             response = urllib2.urlopen(req).read()
-        except urllib2.HTTPError, error:
-            response = error.fp.read()
-        return response
+            self.__call_handler('on_xml_sent', context=context)
+            return response
+        except urllib2.HTTPError, e:
+            error = e.fp.read()
+            raise SystemError(message='Error in urllib2.urlopen: %s' % (error,),
+                              context=context,
+                              origin=e)
 
-    def send_message(self, message, diagnose=False):
-        message_xml = message.toxml()
-        response_xml = self.send_xml(message_xml, diagnose)
-        return self.process_message_result(message_xml, response_xml, diagnose)
+    def send_message(self, message, context=None, diagnose=False):
+        if context is None:
+            context = ControllerContext(outgoing=True)
+        context.message = message
+        context.diagnose = diagnose
 
-    def process_message_result(self, message_xml, response_xml, diagnose):
-        doc = gxml.Document.fromxml(response_xml)
+        if isinstance(message, gmodel.abstract_order_t):
+            context.order_id = message.google_order_number
 
-        GCHECKY_DOES_NOT_WORK = 'SEVERE ERROR! THE GCHECKY LIBRARY DOES NOT FUNCTION PROPERLY'
+        try:
+            try:
+                self.__call_handler('on_message_sending', context=context)
+                message_xml = message.toxml()
+                context.xml = message_xml
+            except Exception, e:
+                error = "Error converting message to xml: '%s'" % (unicode(e), )
+                raise DataError(message=error, context=context, origin=e)
+            response_xml = self._send_xml(message_xml, context=context, diagnose=diagnose)
+            context.response_xml = response_xml
+    
+            response = self.__process_message_result(response_xml, context=context)
+            context.response_message = response
+    
+            self.__call_handler('on_message_sent', context=context)
+            return response
+        except GcheckyError, e:
+            return self.on_exception(exception=e, context=context)
 
-        if diagnose:
+    def __process_message_result(self, response_xml, context):
+        try:
+            doc = gxml.Document.fromxml(response_xml)
+        except Exception, e:
+            error = "Error converting message to xml: '%s'" % (unicode(e), )
+            raise LibraryError(message=error, context=context, origin=e)
+
+        if context.diagnose:
             # It has to be a 'diagnosis' response, otherwise... omg!.. panic!...
             if doc.__class__ != gmodel.diagnosis_t:
-                raise Exception(GCHECKY_DOES_NOT_WORK)
+                error = "The response has to be of type diagnosis_t, not '%s'" % (doc.__class__,)
+                raise LibraryError(message=error,
+                                   context=context)
             return doc
 
         # If the response is 'ok' or 'bye' just return, because its good
         if doc.__class__ == gmodel.request_received_t:
-            return
+            return doc
+
         if doc.__class__ == gmodel.bye_t:
             return doc
 
         # It's not 'ok' so it has to be 'error', otherwise it's an error
         if doc.__class__ != gmodel.error_t:
-            raise Exception(GCHECKY_DOES_NOT_WORK)
+            error = "Unknown response type (expected error_t): '%s'" % (doc.__class__,)
+            raise LibraryError(message=error, context=context)
 
         # 'error' - process it by throwing an exception with error/warning text
         msg = 'Error message from GCheckout API:\n%s' % (doc.error_message, )
@@ -138,16 +425,19 @@ class ControllerLevel_2(ControllerLevel_1):
             for warning in doc.warning_messages:
                 tmp += '\n%s' % (warning,)
             msg += ('Additional warnings:%s' % (tmp,))
-        raise Exception(msg)
+        raise DataError(message=msg, context=context)
 
     def hello(self):
-        doc = self.send_message(gmodel.hello_t())
-        if doc.__class__ != gmodel.bye_t:
-            raise Exception("Expected <bye/> but got %s" % (doc.__class__,))
+        context = ControllerContext()
+        doc = self.send_message(gmodel.hello_t(), context)
+        if isinstance(doc, gxml.Document) and (doc.__class__ != gmodel.bye_t):
+            error = "Expected <bye/> but got %s" % (doc.__class__,)
+            raise LibraryError(message=error, context=context, origin=e)
 
     def archive_order(self, order_id):
         self.send_message(
             gmodel.archive_order_t(google_order_number=order_id))
+
     def unarchive_order(self, order_id):
         self.send_message(
             gmodel.unarchive_order_t(google_order_number=order_id))
@@ -186,11 +476,10 @@ class ControllerLevel_2(ControllerLevel_1):
             comment = comment or None
             ))
 
-    def authorize_order(self, order_id, do_in_production=False):
-        if do_in_production or self.is_sandbox:
-            self.send_message(gmodel.authorize_order_t(
-                google_order_number = order_id
-            ))
+    def authorize_order(self, order_id):
+        self.send_message(gmodel.authorize_order_t(
+            google_order_number = order_id
+        ))
 
     def cancel_order(self, order_id, reason, comment=None):
         self.send_message(gmodel.cancel_order_t(
@@ -217,62 +506,90 @@ class ControllerLevel_2(ControllerLevel_1):
             send_email = send_email or None
             ))
 
-    def is_of_class(self, doc, cls):
-        return doc.__class__ == cls
-
-    MESSAGE_HANDLERS = {
-        gmodel.new_order_notification_t:            'on_new_order',
-        gmodel.order_state_change_notification_t:   'on_order_state_change',
-        gmodel.authorization_amount_notification_t: 'on_authorization_amount',
-        gmodel.risk_information_notification_t:     'on_risk_information',
-        gmodel.charge_amount_notification_t:        'on_charge_amount',
-        gmodel.refund_amount_notification_t:        'on_refund_amount',
-        gmodel.chargeback_amount_notification_t:    'on_chargeback_amount',
-        # Message(s) that we can't possibly recieve. Handle it anyway.
-        gmodel.checkout_redirect_t:                 'on_checkout_redirect',
-        }
-    # This method gets a string and resturns a string
-    # TODO ?? what about iterators, etc?
-    def process(self, input_xml):
+    # This method gets a string and returns a string
+    def receive_xml(self, input_xml, context=None):
+        if context is None:
+            context = ControllerContext(outgoing=False)
+        context.xml = input_xml
         try:
-            input = gxml.Document.fromxml(input_xml)
-            on_handler = None
-            if self.MESSAGE_HANDLERS.has_key(input.__class__):
-                handler = self.MESSAGE_HANDLERS[input.__class__]
-                on_handler = getattr(self, handler)
-                res = on_handler(input, input.google_order_number)
-            else:
-                res = 'Method for %s is not implemented yet' % (input.__class__,)
-            return str(res or gmodel.ok_t())
-        except Exception, exc:
-            xml_text = gmodel.error_t(serial_number = 'error',
-                                      error_message = str(exc)).toxml()
-            import traceback
-            raise ProcessingException(xml_text, where=traceback.format_exc())
+            self.__call_handler('on_xml_receiving', context=context)
+            try:
+                input = gxml.Document.fromxml(input_xml)
+                context.message = input
+            except Exception, e:
+                error = 'Error reading XML: %s' % (e.message,)
+                raise DataError(message=error, context=context, origin=e)
+    
+            result = self.receive_message(message=input,
+                                          order_id=input.google_order_number,
+                                          context=context)
+            context.response_message = result
+    
+            try:
+                response_xml = result.toxml()
+                context.response_xml = response_xml
+            except Exception, e:
+                error = 'Error reading XML: %s' % (e.message,)
+                raise DataError(message=error, context=context, origin=e)
+            self.__call_handler('on_xml_received', context=context)
+            return response_xml
+        except GcheckyError, e:
+            return self.on_exception(exception=e, context=context)
 
-    # Google sends a new order notification when a buyer places an order through Google Checkout.
-    # Before shipping the items in an order, you should wait until you have also received
-    # the risk information notification for that order as well as
-    # the order state change notification informing you that the order's financial state
-    # has been updated to CHARGEABLE.
-    def on_new_order(self, notification, order_id):
-        return 'on_new_order'
-    def on_order_state_change(self, notification, order_id):
-        return 'on_order_state_change'
-    def on_authorization_amount(self, notification, order_id):
-        return 'on_authorization_amount'
-    # Google Checkout sends a risk information notification to provide financial information
-    # that helps you to ensure that an order is not fraudulent.
-    def on_risk_information(self, notification, order_id):
-        return 'on_risk_information'
-    def on_charge_amount(self, notification, order_id):
-        return 'on_charge_amount'
-    def on_refund_amount(self, notification, order_id):
-        return 'on_refund_amount'
-    def on_chargeback_amount(self, notification, order_id):
-        return 'on_chargeback_amount'
-    def on_checkout_redirect(self, notification, order_id):
-        raise Exception('We should never recieve this... this is a bug.')
+    # A dictionary of document handler names. Comes handy in receive_message.
+    __MESSAGE_HANDLERS = {
+        gmodel.new_order_notification_t:            'handle_new_order',
+        gmodel.order_state_change_notification_t:   'handle_order_state_change',
+        gmodel.authorization_amount_notification_t: 'handle_authorization_amount',
+        gmodel.risk_information_notification_t:     'handle_risk_information',
+        gmodel.charge_amount_notification_t:        'handle_charge_amount',
+        gmodel.refund_amount_notification_t:        'handle_refund_amount',
+        gmodel.chargeback_amount_notification_t:    'handle_chargeback_amount',
+        }
+
+    def receive_message(self, message, order_id, context):
+        context.order_id = order_id
+        self.__call_handler('on_message_receiving', context=context)
+        # retreive order instance from DB given the google order number
+        order = self.__call_handler('on_retrieve_order', context=context, order_id=order_id)
+
+        # handler = None
+        result = None
+        if self.__MESSAGE_HANDLERS.has_key(message.__class__):
+            handler_name = self.__MESSAGE_HANDLERS[message.__class__]
+            result = self.__call_handler(handler_name,
+                                         message=message,
+                                         order_id=order_id,
+                                         context=context,
+                                         order=order)
+
+        if result is None:
+            result = self.__call_handler('handle_notification',
+                                         message=message,
+                                         order_id=order_id,
+                                         context=context,
+                                         order=order)
+
+        error = None
+        if result is None:
+            error = "Notification '%s' was not handled" % (message.__class__,)
+        elif not (result.__class__ is gmodel.ok_t):
+            try:
+                error = unicode(result)
+            except Exception, e:
+                error = "Invalid value returned by handler '%s': %s" % (handler_name,
+                                                                        e.message)
+                raise HandlerError(message=error, context=context, origin=e)
+
+        if error is not None:
+            result = gmodel.error_t(serial_number = 'error',
+                                    error_message=error)
+        else:
+            # TODO: Remove this after testing
+            assert result.__class__ is gmodel.ok_t
+
+        self.__call_handler('on_message_received', context=context)
+        return result
 
 # Just an alias with a shorter name.
 Controller = ControllerLevel_2
