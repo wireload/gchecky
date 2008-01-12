@@ -581,15 +581,15 @@ class Complex(Field):
 
 class String(Field):
     """Any text value."""
-    def __init__(self, path, maxlength=None, **kwargs):
-        return super(String, self).__init__(path, maxlength=maxlength, **kwargs)
+    def __init__(self, path, max_length=None, **kwargs):
+        return super(String, self).__init__(path, max_length=max_length, **kwargs)
     def data2str(self, data):
         return str(data)
     def str2data(self, text):
         return text
     def validate(self, data):
-        if (self.maxlength != None) and len(str(data)) >= self.maxlength:
-            return "The string is too long (maxlength=%d)." % (self.maxlength,)
+        if (self.max_length != None) and len(str(data)) >= self.max_length:
+            return "The string is too long (max_length=%d)." % (self.max_length,)
         return True
 
 def apply_parent_validation(clazz, error_prefix=None):
@@ -668,6 +668,11 @@ class Integer(Long):
 
 class Url(Pattern):
     """
+    Note: a 'http://localhost/' does not considered to be a valid url.
+    So any other alias name that you migght use in your local network
+    (and defined in your /etc/hosts file) could possibly be considered
+    invalid.
+
     >>> u = Url('dummy')
     >>> u.validate('http://google.com')
     True
@@ -699,13 +704,15 @@ class Url(Pattern):
     True
     >>> u.validate('https://sandbox.google.com/checkout/view/buy?o=shoppingcart&shoppingcart=515556794648982')
     True
+    >>> u.validate('http://127.0.0.1:8000/digital/order/continue/')
+    True
     """
     def __init__(self, path, **kwargs):
         import re
         # Regular expression divided into chunks:
         protocol  = r'((http(s?)|ftp)\:\/\/|~/|/)?'
         user_pass = r'([\w]+:\w+@)?'
-        domain    = r'([a-zA-Z]{1}([\w\-]+\.)+([\w]{2,5}))'
+        domain    = r'(([a-zA-Z]{1}([\w\-]+\.)+([\w]{2,5}))|(([0-9]+\.){3}[0-9]+))'
         port      = r'(:[\d]{1,5})?'
         file    = r'(/[\w\.\+-;\(\)]*)*'
         params    = r'(\?.*)?'
@@ -872,10 +879,8 @@ class Timestamp(Field):
     def data2str(self, data):
         return data.isoformat()
     def str2data(self, text):
-        from datetime import datetime
-        from xml.utils import iso8601
-        # 2007-04-23T14:31:54.000Z
-        return datetime.fromtimestamp(iso8601.parse(text))
+        import iso8601
+        return iso8601.parse_date(text)
 
 if __name__ == "__main__":
     def run_doctests():
