@@ -1,5 +1,6 @@
 #!/usr/bin/python
-from distutils.core import setup
+# from distutils.core import setup
+from setuptools import setup
 
 # Tell distutils to put the data_files in platform-specific installation
 # locations. See here for an explanation:
@@ -17,6 +18,7 @@ setup(name='gchecky',
       author_email='etarassov@gmail.com',
       description='Python wrapper for Google Checkout API Level 2',
       license='Apache License 2.0',
+      install_requires=['pyiso8601'],
       packages=['gchecky', 'gchecky.test'],
       data_files=[],
       scripts=[],
