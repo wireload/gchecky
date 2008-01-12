@@ -68,11 +68,14 @@ class price_t(gxml.Node):
     value    = gxml.Double('', default=0)
     currency = gxml.String('@currency', values=CURRENCIES)
 
+DISPLAY_DISPOSITION = ('OPTIMISTIC', 'PESSIMISTIC')
 class digital_content_t(gxml.Node):
-    description    = gxml.Html('description', maxlength=1024, required=False)
+    description    = gxml.Html('description', max_length=1024, required=False)
     email_delivery = gxml.Boolean('email-delivery', required=False)
     key            = gxml.String('key', required=False)
     url            = gxml.String('url', required=False)
+    display_disposition = gxml.String('display-disposition', required=False,
+                                      values=DISPLAY_DISPOSITION)
 
 class item_t(gxml.Node):
     name                = gxml.String('item-name')
@@ -87,6 +90,13 @@ class item_t(gxml.Node):
                                           required=False)
 
 class postal_area_t(gxml.Node):
+    """
+    >>> test_node(postal_area_t(country_code = 'AA'),
+    ... '''
+    ... <node><country-code>AA</country-code></node>
+    ... '''
+    ... )
+    """
     country_code        = CountryCode('country-code')
     postal_code_pattern = gxml.String('postal-code-pattern', required=False)
 
@@ -399,8 +409,8 @@ class charge_order_t(abstract_order_t):
 class refund_order_t(abstract_order_t):
     tag_name = 'refund-order'
     amount  = gxml.Complex('amount', price_t, required=False)
-    comment = gxml.String('comment', maxlength=140, required=False)
-    reason  = gxml.String('reason', maxlength=140)
+    comment = gxml.String('comment', max_length=140, required=False)
+    reason  = gxml.String('reason', max_length=140)
 
 class cancel_order_t(abstract_order_t):
     """
@@ -422,8 +432,8 @@ class cancel_order_t(abstract_order_t):
     ... )
     """
     tag_name = 'cancel-order'
-    comment = gxml.String('comment', maxlength=140, required=False)
-    reason  = gxml.String('reason', maxlength=140)
+    comment = gxml.String('comment', max_length=140, required=False)
+    reason  = gxml.String('reason', max_length=140)
 
 class authorize_order_t(abstract_order_t):
     tag_name = 'authorize-order'
@@ -573,7 +583,7 @@ class discount_result_t(gxml.Node):
     valid             = gxml.Boolean('valid')
     calculated_amount = gxml.Complex('calculated-amount', price_t)
     code              = gxml.String('code')
-    message           = gxml.String('message', maxlength=255)
+    message           = gxml.String('message', max_length=255)
 
 class merchant_code_results_t(gxml.Node):
     coupon_result           = gxml.List('', gxml.Complex('coupon-result', discount_result_t))
@@ -657,7 +667,7 @@ class demo_failure_t(gxml.Document):
     ... )
     """
     tag_name = 'demo-failure'
-    message = gxml.String('@message', maxlength=25)
+    message = gxml.String('@message', max_length=25)
 
 if __name__ == "__main__":
     def run_doctests():
