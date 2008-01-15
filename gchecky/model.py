@@ -228,13 +228,92 @@ class shipping_methods_t(gxml.Node):
     merchant_calculated_shippings = gxml.List('', gxml.Complex('merchant-calculated-shipping', merchant_calculated_shipping_t), required=False) # list of merchant_calculated_shipping_t
     pickups                       = gxml.List('', gxml.Complex('pickup', pickup_t), required=False) # list of pickup_t
 
+URL_PARAMETER_TYPES=(
+    'buyer-id', # A Google-assigned value that uniquely identifies a customer email address.
+    'order-id', # A Google-assigned value that uniquely identifies an order. This value is displayed in the Merchant Center for each order. If you have implemented the Notification API, you will also see this value in all Google Checkout notifications.
+    'order-subtotal', # The total cost for all of the items in the order including coupons and discounts but excluding taxes and shipping charges.
+    'order-subtotal-plus-tax', # The total cost for all of the items in the order, including taxes, coupons and discounts, but excluding shipping charges.
+    'order-subtotal-plus-shipping', # The total cost for all of the items in the order, including shipping charges, coupons and discounts, but excluding taxes.
+    'order-total', # The total cost for all of the items in the order, including taxes, shipping charges, coupons and discounts.
+    'tax-amount', # The total amount of taxes charged for an order.
+    'shipping-amount', # The shipping cost associated with an order.
+    'coupon-amount', # The total amount of all coupons factored into the order total.
+    'billing-city', # The city associated with the order's billing address.
+    'billing-region', # The U.S. state associated with the order's billing address.
+    'billing-postal-code', # The five-digit U.S. zip code associated with the order's billing address.
+    'billing-country-code', # The two-letter ISO 3166 country code associated with the order's billing address.
+    'shipping-city', # The city associated with the order's shipping address.
+    'shipping-region', # The U.S. state associated with the order's shipping address.
+    'shipping-postal-code', # The five-digit U.S. zip code associated with the order's shipping address.
+    'shipping-country-code', # The two-letter ISO 3166 country code associated with the order's shipping address.',
+)
+
+class url_parameter_t(gxml.Node):
+    name = gxml.String('@name')
+    type = gxml.String('@type', values=URL_PARAMETER_TYPES)
+
+class parameterized_url_t(gxml.Node):
+    url        = gxml.Url('@url', required=True)
+    parameters = gxml.List('parameters', gxml.Complex('url-parameter', url_parameter_t), required=True)
+
 class checkout_flow_support_t(gxml.Node):
+    """
+    >>> test_node(
+    ...   checkout_flow_support_t(
+    ...     parameterized_urls = [
+    ...         parameterized_url_t(
+    ...             url='http://google.com/',
+    ...             parameters=[url_parameter_t(name='a', type='buyer-id')]
+    ...         ),
+    ...         parameterized_url_t(
+    ...             url='http://yahoo.com/',
+    ...             parameters=[url_parameter_t(name='a', type='shipping-city'),
+    ...                         url_parameter_t(name='b', type='tax-amount')]
+    ...         ),
+    ...         parameterized_url_t(
+    ...             url='http://mozilla.com/',
+    ...             parameters=[url_parameter_t(name='a', type='order-total'),
+    ...                         url_parameter_t(name='b', type='shipping-region'),
+    ...                         url_parameter_t(name='c', type='shipping-country-code')]
+    ...         )
+    ...     ],
+    ...   )
+    ... ,
+    ... '''
+    ... <node>
+    ...   <parameterized-urls>
+    ...     <parameterized-url url="http://google.com/">
+    ...       <parameters>
+    ...         <url-parameter name="a" type="buyer-id"/>
+    ...       </parameters>
+    ...     </parameterized-url>
+    ...     <parameterized-url url="http://yahoo.com/">
+    ...       <parameters>
+    ...         <url-parameter name="a" type="shipping-city"/>
+    ...         <url-parameter name="b" type="tax-amount"/>
+    ...       </parameters>
+    ...     </parameterized-url>
+    ...     <parameterized-url url="http://mozilla.com/">
+    ...       <parameters>
+    ...         <url-parameter name="a" type="order-total"/>
+    ...         <url-parameter name="b" type="shipping-region"/>
+    ...         <url-parameter name="c" type="shipping-country-code"/>
+    ...       </parameters>
+    ...     </parameterized-url>
+    ...   </parameterized-urls>
+    ... </node>
+    ... '''
+    ... )
+    """
     edit_cart_url              = gxml.Url('edit-cart-url', required=False)         # optional, URL
     continue_shopping_url      = gxml.Url('continue-shopping-url', required=False) # optional, URL
     tax_tables                 = gxml.Complex('tax-tables', tax_tables_t, required=False) # optional, tax_tables_t
     shipping_methods           = gxml.Complex('shipping-methods', shipping_methods_t, required=False) # optional, shipping_methods_t
     merchant_calculations      = gxml.Complex('merchant-calculations', merchant_calculations_t, required=False) # optional, merchant_calculations_t
     request_buyer_phone_number = gxml.Boolean('request-buyer-phone-number', required=False) # optional, Boolean
+    platform_id                = gxml.Long('platform-id', required=False)
+    analytics_data             = gxml.String('analytics-data', required=False)
+    parameterized_urls         = gxml.List('parameterized-urls', gxml.Complex('parameterized-url', parameterized_url_t), required=False)
 
 class shopping_cart_t(gxml.Node):
     expiration            = gxml.Timestamp('cart-expiration/good-until-date', required=False)
