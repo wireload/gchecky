@@ -115,6 +115,14 @@ class Field(object):
         self.path = path
         self.path_nodes, self.path_attribute = Field.deconstruct_path(path)
 
+    def get_initial_value(self):
+        if self.required:
+            if self.default is not None:
+                return self.default
+            elif self.values and len(self.values) > 0:
+                return self.values[0]
+        return None
+
     def save(self, node, data):
         """Save the field data value into the DOM node. The value is stored
         accordingly to the field path which could be the DOM node itself or
@@ -210,6 +218,7 @@ class Field(object):
                             els.append(item)
             elements = els
         return elements
+
     def get_one_node_for_path(self, parent):
         """Same as 'get_nodes_path' but checks that there is exactly one result
         and returns it."""
@@ -217,6 +226,7 @@ class Field(object):
         if len(els) != 1:
             raise Exception('Multiple nodes where exactly one is expected %s' % (self.path_nodes,))
         return els[0]
+
     def get_any_node_for_path(self, parent):
         """Same as 'get_nodes_path' but checks that there is no more than one
         result and returns it, or None if the list is empty."""
@@ -240,6 +250,7 @@ class Field(object):
         if self.values:
             str += ':VALS("%s")' % ('","'.join(self.values),)
         return str
+
     def __repr__(self):
         """Used in documentation. This method is called from subclasses
         __repr__ method to generate a human-readable description of the current
@@ -314,9 +325,7 @@ class Node(object):
         or C{None}."""
         instance = object.__new__(cls)
         for fname, field in cls.fields().items():
-            setattr(instance, fname, field.default)
-            if field.default is None and field.values and field.required:
-                setattr(instance, fname, field.values[0])
+            setattr(instance, fname, field.get_initial_value())
         return instance
 
     def __init__(self, **kwargs):
