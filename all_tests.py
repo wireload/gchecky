@@ -1,5 +1,4 @@
 from xml import dom
-from xml.dom import implementation
 
 
 if __name__ == '__main__':
