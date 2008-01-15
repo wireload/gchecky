@@ -6,7 +6,7 @@ def process_google_message(request, controller, input_xml=None):
             raise Http404('Not a POST method')
         input_xml = request.raw_post_data
     try:
-        output_xml = controller.process(input_xml)
+        output_xml = controller.receive_xml(input_xml)
         return HttpResponse(output_xml, mimetype='text/xml')
     except Exception, exc:
         return HttpResponseServerError(str(exc))

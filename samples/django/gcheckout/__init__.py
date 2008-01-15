@@ -117,9 +117,9 @@ class DjangoGControllerImpl(Controller):
                                                            amount,
                                                            reason,
                                                            comment)
-    def authorize_order(self, cart, do_in_production=False):
-        return super(DjangoGControllerImpl, self).authorize_order(cart.google_id,
-                                                              do_in_production)
+    def authorize_order(self, cart):
+        return super(DjangoGControllerImpl, self).authorize_order(cart.google_id)
+
     def cancel_order(self, cart, reason, comment=None):
         return super(DjangoGControllerImpl, self).cancel_order(cart.google_id,
                                                            reason,
@@ -141,9 +141,9 @@ class DjangoGControllerImpl(Controller):
                                                             tracking_number,
                                                             send_email)
     # Log all the messages from (and our responses to) google checkout services
-    def process(self, input_xml):
+    def receive_xml(self, input_xml):
         try:
-            output_xml = super(DjangoGControllerImpl, self).process(input_xml)
+            output_xml = super(DjangoGControllerImpl, self).receive_xml(input_xml)
             self.log_message_from_google(input_xml, output_xml)
             return output_xml
         except ProcessingException, exc:

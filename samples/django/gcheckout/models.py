@@ -11,12 +11,12 @@ else:
     float_field = models.FloatField(max_digits=6, decimal_places=3, blank=False, default=0)
 
 class Cart(models.Model):
-    user_id   = models.CharField(maxlength=255, blank=True, null=True)
-    google_id = models.CharField(maxlength=255, blank=False)
+    user_id   = models.CharField(max_length=255, blank=True, null=True)
+    google_id = models.CharField(max_length=255, blank=False)
     xml       = models.TextField(blank=False)
-    state     = models.CharField(maxlength=32, blank=False,
+    state     = models.CharField(max_length=32, blank=False,
                                  choices=list_for_django(gmodel.FULFILLMENT_ORDER_STATE))
-    payment   = models.CharField(maxlength=32, blank=False,
+    payment   = models.CharField(max_length=32, blank=False,
                                  choices=list_for_django(gmodel.FINANCIAL_ORDER_STATE))
     total           = float_field
     authorized      = float_field
@@ -43,22 +43,22 @@ class Cart(models.Model):
 
 class Item(models.Model):
     cart        = models.ForeignKey(Cart, blank=False)
-    name        = models.CharField(maxlength=255, blank=False, null=True)
+    name        = models.CharField(max_length=255, blank=False, null=True)
     description = models.TextField(blank=False, null=True)
     price       = float_field
-    currency    = models.CharField(maxlength=8, blank=False,
+    currency    = models.CharField(max_length=8, blank=False,
                                    choices=list_for_django(gmodel.CURRENCIES))
     quantity    = models.PositiveIntegerField(blank=False)
-    merchant_id = models.CharField(maxlength=255, blank=False)
+    merchant_id = models.CharField(max_length=255, blank=False)
     merchant_data = models.TextField(blank=True, null=True)
 
     class Admin:
         pass
 
 class Message(models.Model):
-    serial_number = models.CharField(maxlength=128, blank=True, null=True)
+    serial_number = models.CharField(max_length=128, blank=True, null=True)
     cart       = models.ForeignKey(Cart, blank=True, null=True)
-    tag        = models.CharField(maxlength=16, default='', blank=True, null=False)
+    tag        = models.CharField(max_length=16, default='', blank=True, null=False)
     input_xml  = models.TextField(blank=False)
     output_xml = models.TextField(blank=True, null=True)
     no_errors  = models.BooleanField(default=False, null=False)
