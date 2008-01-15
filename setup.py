@@ -1,5 +1,7 @@
 #!/usr/bin/python
-# from distutils.core import setup
+import ez_setup
+ez_setup.use_setuptools()
+
 from setuptools import setup
 
 # Tell distutils to put the data_files in platform-specific installation
