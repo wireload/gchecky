@@ -137,18 +137,17 @@ class Field(object):
           @param node: The xml NODE that (or subnodes or attribute of which)
           contains the field data value.
           @see L{save}, L{__init__}"""
-        from xml.dom.Document import Node as XmlNode
         if self.path_attribute is not None:
             if not node.hasAttribute(self.path_attribute):
                 return None
             str = node.getAttribute(self.path_attribute)
         else:
-            if node.nodeType == XmlNode.TEXT_NODE or node.nodeType == XmlNode.CDATA_SECTION_NODE:
+            if node.nodeType == node.TEXT_NODE or node.nodeType == node.CDATA_SECTION_NODE:
                 str = node.data
             else:
                 str = ''.join([el.data for el in node.childNodes
-                               if (el.nodeType == XmlNode.TEXT_NODE
-                                   or el.nodeType == XmlNode.CDATA_SECTION_NODE)])
+                               if (el.nodeType == node.TEXT_NODE
+                                   or el.nodeType == node.CDATA_SECTION_NODE)])
         return self.str2data(str)
 
     def validate(self, data):
@@ -199,7 +198,6 @@ class Field(object):
         the returned list.
         @param parent: The node to scan for this field data occurences.
         @return: The list of nodes that corresponds to this field."""
-        from xml.dom.Document import Node as XmlNode
         elements = [parent]
         for nname in self.path_nodes:
             els = []
@@ -207,7 +205,7 @@ class Field(object):
                 children = el.childNodes
                 for i in range(0, children.length):
                     item = children.item(i)
-                    if item.nodeType == XmlNode.ELEMENT_NODE:
+                    if item.nodeType == item.ELEMENT_NODE:
                         if item.tagName == nname:
                             els.append(item)
             elements = els
@@ -356,11 +354,7 @@ class Node(object):
                     # Store the original DOM node
                     setattr(self, '%s_dom' % (fname,), fnode)
                     # Store the original XML text
-                    import StringIO
-                    from xml.dom.ext import PrettyPrint
-                    buffer = StringIO.StringIO()
-                    PrettyPrint(fnode, buffer)
-                    setattr(self, '%s_xml' % (fname,), buffer.getvalue())
+                    setattr(self, '%s_xml' % (fname,), fnode.toxml())
 
                 if data is None:
                     if field.required:
@@ -428,22 +422,31 @@ class Document(Node):
     __metaclass__ = DocumentManager
     tag_name = 'unknown'
 
-    def toxml(self):
+    def toxml(self, pretty=False):
         """@return: A string for the XML document representing the Document
         instance."""
-        from xml.dom import implementation
-        namespace = GOOGLE_CHECKOUT_API_XML_SCHEMA
+        from xml.dom.minidom import getDOMImplementation
+        dom_impl = getDOMImplementation()
+
         tag_name = self.__class__.tag_name
-        dt = implementation.createDocumentType(tag_name, '', '')
-        doc = implementation.createDocument(namespace, tag_name, dt)
+        doc      = dom_impl.createDocument(GOOGLE_CHECKOUT_API_XML_SCHEMA,
+                                           tag_name,
+                                           None)
+
+        # TODO Fix this namespace problem that xml.dom.minidom has -- it does
+        #      render the default namespace declaration for the newly created
+        #      (not parsed) document. As a workaround we parse a dummy text
+        #      with the wanted NS declaration and then fill it up with data.
+        from xml.dom.minidom import parseString
+        dummy_xml = '<?xml version="1.0"?><%s xmlns="%s"/>' % (tag_name,
+                                                               GOOGLE_CHECKOUT_API_XML_SCHEMA)
+        doc = parseString(dummy_xml)
+
         self.write(doc.documentElement)
-        from xml.dom.ext import PrettyPrint
-        import StringIO
-        output = StringIO.StringIO()
-        PrettyPrint(doc, stream=output)
-        text = output.getvalue()
-        output.close()
-        return text
+
+        if pretty:
+            return doc.toprettyxml((pretty is True and '  ') or pretty)
+        return doc.toxml()
 
     def __str__(self):
         try:
@@ -458,9 +461,8 @@ class Document(Node):
         instance.
         @return: A fresh-new instance of a Document (of the right subclas
         determined by the xml document tag name)."""
-        from xml.dom.ext.reader import Sax2
-        reader = Sax2.Reader()
-        doc = reader.fromString(text)
+        from xml.dom.minidom import parseString
+        doc = parseString(text)
         root = doc.documentElement
         clazz = DocumentManager.get_class(root.tagName)
         instance = clazz()
@@ -619,9 +621,11 @@ class Pattern(String):
     @ivar pattern: a regular expression to which a value has to confirm."""
     pattern = None
     def __init__(self, path, pattern, **kwargs):
-        """Initizlizes a Pattern field.
+        """
+        Initizlizes a Pattern field.
         @param path: L{Field.path}
-        @param pattern: a regular expression describing the format of the data"""
+        @param pattern: a regular expression describing the format of the data
+        """
         return super(Pattern, self).__init__(path=path, pattern=pattern, **kwargs)
 
     @apply_parent_validation(String)
@@ -640,8 +644,13 @@ class Decimal(Field):
 
 class Double(Field):
     """Floating point value"""
+    def __init__(self, path, precision=3, **kwargs):
+        """
+        @param precision: Precision of the value
+        """
+        return super(Double, self).__init__(path=path, precision=precision, **kwargs)
     def data2str(self, data):
-        return '%f' % data
+        return ('%%.%df' % (self.precision,)) % (data,)
     def str2data(self, text):
         return float(text)
 

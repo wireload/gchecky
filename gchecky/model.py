@@ -34,22 +34,20 @@ def test_document(doc, xml_text):
         # If xml misses header, then add it.
         if len(xml_text) < 2 or xml_text[0:2] != "<?":
             xml_text = "<?xml version='1.0' encoding='UTF-8'?>\n" + xml_text
-        from xml.dom.ext.reader import Sax2
-        reader = Sax2.Reader()
-        doc = reader.fromString(xml_text)
-        import StringIO
-        output = StringIO.StringIO()
-        from xml.dom.ext import PrettyPrint
-        PrettyPrint(doc, stream=output)
-        text = output.getvalue()
-        output.close()
-        return text
+        from xml.dom.minidom import parseString
+        doc = parseString(xml_text)
+
+        text = doc.toprettyxml('')
+        # To avoid formatting problems we just strip all the line returns and
+        # spaces (while it breaks XML into a text string it still makes
+        # this form a 'canonical' one).
+        return text.replace('\n', '').replace(' ', '')
 
     expected_xml = normalize_xml(xml_text)
-    obtained_xml = normalize_xml(doc.toxml())
+    obtained_xml = normalize_xml(doc.toxml(pretty='  '))
 
     if expected_xml != obtained_xml:
-        print "Expected:\n\n%s\n\nGot:\n\n%s\n" % (expected_xml, obtained_xml)
+        print "Expected:\n\n%s\n\nGot:\n\n%s\n" % (xml_text, doc.toxml('  '))
 
 def test_node(node, xml_text):
     """
@@ -58,9 +56,10 @@ def test_node(node, xml_text):
     class Dummy(gxml.Document):
         tag_name='dummy'
         data=gxml.Complex('node', node.__class__, required=True)
+    xml_text = xml_text.replace('<', '  <')
+    # TODO ...just ugly (below)
     test_document(Dummy(data=node),
                   "<dummy xmlns='http://checkout.google.com/schema/2'>%s</dummy>" % (xml_text,))
-
 
 CURRENCIES = ('USD', 'GBP')
 
@@ -91,9 +90,9 @@ class item_t(gxml.Node):
 
 class postal_area_t(gxml.Node):
     """
-    >>> test_node(postal_area_t(country_code = 'AA'),
+    >>> test_node(postal_area_t(country_code = 'VU'),
     ... '''
-    ... <node><country-code>AA</country-code></node>
+    ... <node><country-code>VU</country-code></node>
     ... '''
     ... )
     """
@@ -196,7 +195,7 @@ class shipping_option_t(gxml.Node):
     ...         )
     ... , '''
     ... <node name='Testing'>
-    ...   <price currency='GBP'>9.990000</price>
+    ...   <price currency='GBP'>9.990</price>
     ...   <shipping-restrictions>
     ...     <allowed-areas>
     ...       <world-area/>
@@ -510,22 +509,22 @@ class charge_amount_notification_t(abstract_notification_t):
     Represents information about a successful charge for an order.
 
     >>> from datetime import datetime
-    >>> from xml.utils import iso8601
+    >>> import iso8601
     >>> test_document(
     ...     charge_amount_notification_t(
     ...         serial_number='95d44287-12b1-4722-bc56-cfaa73f4c0d1',
     ...         google_order_number = '841171949013218',
-    ...         timestamp = datetime.fromtimestamp(iso8601.parse('2006-03-18T18:25:31.593Z')),
+    ...         timestamp = iso8601.parse_date('2006-03-18T18:25:31.593Z'),
     ...         latest_charge_amount = price_t(currency='USD', value=2226.06),
     ...         total_charge_amount = price_t(currency='USD', value=2226.06)
     ...     )
     ... ,
     ...     '''
     ...     <charge-amount-notification xmlns="http://checkout.google.com/schema/2" serial-number="95d44287-12b1-4722-bc56-cfaa73f4c0d1">
-    ...       <latest-charge-amount currency="USD">226.06</latest-charge-amount>
+    ...       <latest-charge-amount currency="USD">2226.060</latest-charge-amount>
     ...       <google-order-number>841171949013218</google-order-number>
-    ...       <total-charge-amount currency="USD">226.06</total-charge-amount>
-    ...       <timestamp>2006-03-18T18:25:31.593Z</timestamp>
+    ...       <total-charge-amount currency="USD">2226.060</total-charge-amount>
+    ...       <timestamp>2006-03-18T18:25:31.593000+00:00</timestamp>
     ...     </charge-amount-notification>
     ...     '''
     ... )
