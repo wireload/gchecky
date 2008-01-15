@@ -48,17 +48,34 @@ import re
 
 VERSION = (0, 1, 1)
 
-def version():
+def version(version=VERSION):
     """
-    Return human-friendly version string
+    Return version string.
+    >>> version((0,1,1))
+    '0.1.1'
+    >>> version((0,1,0))
+    '0.1.0'
+    >>> version(VERSION) == version()
+    True
+    """
+    return '.'.join([str(v) for v in version])
+
+def human_version(version=VERSION):
+    """
+    Return human-friendly version string.
+    >>> human_version((0,1,0))
+    '0.1'
+    >>> human_version(VERSION) == human_version()
+    True
     """
     # For a release version do not include the minor revision number '.0'
-    human_version = '.'.join([str(v) for v in VERSION[:-1]])
+    human_version = '.'.join([str(v) for v in version[:-1]])
     # For maintenance versions replace the minor number by SVN revision.
-    if VERSION[-1]:
+    if version[-1]:
         rev = None
         # Do as django does - try to manually parse svn/entries file:
-        entries_path = '%s/.svn/entries' % (__path__[0])
+        import gchecky
+        entries_path = '%s/.svn/entries' % (gchecky.__path__[0])
         if os.path.exists(entries_path):
             entries = open(entries_path, 'r').read()
             # Versions >= 7 of the entries file are flat text.  The first line is
@@ -75,5 +92,11 @@ def version():
                 rev = dom.getElementsByTagName('entry')[0].getAttribute('revision')
         if not rev:
             rev = 'unknown'
-        human_version = '%s-%s-SVN%s' % (human_version, VERSION[-1], rev)
+        human_version = '%s-%s-SVN%s' % (human_version, version[-1], rev)
     return human_version
+
+if __name__ == "__main__":
+    def run_doctests():
+        import doctest
+        doctest.testmod()
+    run_doctests()
