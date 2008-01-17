@@ -363,7 +363,10 @@ class Node(object):
                     # Store the original DOM node
                     setattr(self, '%s_dom' % (fname,), fnode)
                     # Store the original XML text
-                    setattr(self, '%s_xml' % (fname,), fnode.toxml())
+                    xml_fragment = ''
+                    if fnode is not None:
+                        xml_fragment = fnode.toxml()
+                    setattr(self, '%s_xml' % (fname,), xml_fragment)
 
                 if data is None:
                     if field.required:
