@@ -3,14 +3,6 @@ from base64 import b64encode
 from gchecky import gxml
 from gchecky import model as gmodel
 
-HTML = """
-<form method="POST" action="%s">
-    <input type="hidden" name="cart" value="%s" />
-    <input type="hidden" name="signature" value="%s" />
-    <input type="image" src="%s" border="0" alt="Google Checkout" /> 
-</form>
-"""
-
 class ProcessingException(Exception):
     def __init__(self, message, where=''):
         self.where = where
@@ -25,27 +17,52 @@ class html_order(object):
     url = None
     button = None
     xml = None
-    html = None
+    def html(self):
+        """
+        Return the html form containing two required hidden fields
+        and the submit button in the form of Google Checkout button image.
+        """
+        return """
+               <form method="POST" action="%s">
+                   <input type="hidden" name="cart" value="%s" />
+                   <input type="hidden" name="signature" value="%s" />
+                   <input type="image" src="%s" border="0" alt="Google Checkout" /> 
+               </form>
+               """ % (self.url, self.cart, self.signature, self.button)
 
 class ControllerLevel_1(object):
-    __SANDBOX_URLS  = {'CHECKOUT_BUTTON': 'https://sandbox.google.com/checkout/buttons/checkout.gif?merchant_id=%s&w=180&h=46&style=white&variant=text',
-                       'CLIENT_POST_CART':'https://sandbox.google.com/checkout/api/checkout/v2/checkout/Merchant/%s',
-                       'SERVER_POST_CART':'https://sandbox.google.com/checkout/api/checkout/v2/merchantCheckout/Merchant/%s',
-                       'ORDER_PROCESSING':'https://sandbox.google.com/checkout/api/checkout/v2/request/Merchant/%s'
+    __MERCHANT_BUTTON  = 'MERCHANT_BUTTON'
+    __CLIENT_POST_CART = 'CLIENT_POST_CART'
+    __SERVER_POST_CART = 'SERVER_POST_CART'
+    __ORDER_PROCESSING = 'ORDER_PROCESSING'
+    __CLIENT_DONATION  = 'CLIENT_DONATION'
+    __SERVER_DONATION  = 'SERVER_DONATION'
+    __DONATION_BUTTON  = 'DONATION_BUTTON'
+    __SANDBOX_URLS  = {__MERCHANT_BUTTON: 'https://sandbox.google.com/checkout/buttons/checkout.gif?merchant_id=%s&w=160&h=43&style=white&variant=text',
+                       __CLIENT_POST_CART:'https://sandbox.google.com/checkout/api/checkout/v2/checkout/Merchant/%s',
+                       __SERVER_POST_CART:'https://sandbox.google.com/checkout/api/checkout/v2/merchantCheckout/Merchant/%s',
+                       __ORDER_PROCESSING:'https://sandbox.google.com/checkout/api/checkout/v2/request/Merchant/%s',
+                       __CLIENT_DONATION: 'https://sandbox.google.com/checkout/api/checkout/v2/checkout/Donations/%s',
+                       __SERVER_DONATION: 'https://sandbox.google.com/checkout/api/checkout/v2/merchantCheckout/Donations/%s',
+                       __DONATION_BUTTON: 'https://sandbox.google.com/checkout/buttons/donation.gif?merchant_id=%s&w=160&h=43&style=white&variant=text',
                       }
-    __PRODUCTION_URLS={'CHECKOUT_BUTTON': 'https://checkout.google.com/buttons/checkout.gif?merchant_id=%s&w=180&h=46&style=white&variant=text',
-                       'CLIENT_POST_CART':'https://checkout.google.com/api/checkout/v2/checkout/Merchant/%s',
-                       'SERVER_POST_CART':'https://checkout.google.com/api/checkout/v2/merchantCheckout/Merchant/%s',
-                       'ORDER_PROCESSING':'https://checkout.google.com/api/checkout/v2/request/Merchant/%s'
+    __PRODUCTION_URLS={__MERCHANT_BUTTON: 'https://checkout.google.com/buttons/checkout.gif?merchant_id=%s&w=160&h=43&style=white&variant=text',
+                       __CLIENT_POST_CART:'https://checkout.google.com/api/checkout/v2/checkout/Merchant/%s',
+                       __SERVER_POST_CART:'https://checkout.google.com/api/checkout/v2/merchantCheckout/Merchant/%s',
+                       __ORDER_PROCESSING:'https://checkout.google.com/api/checkout/v2/request/Merchant/%s',
+                       __CLIENT_DONATION: 'https://checkout.google.com/api/checkout/v2/checkout/Donations/%s',
+                       __SERVER_DONATION: 'https://checkout.google.com/api/checkout/v2/merchantCheckout/Donations/%s',
+                       __DONATION_BUTTON: 'https://checkout.google.com/buttons/donation.gif?merchant_id=%s&w=160&h=43&style=white&variant=text',
                       }
     # Specify all the needed information such as merchant account credentials:
     #   - sandbox or production
     #   - google vendor ID
     #   - google merchant key
-    def __init__(self, vendor_id, merchant_key, is_sandbox=True):
+    def __init__(self, vendor_id, merchant_key, is_sandbox=True, currency='USD'):
         self.vendor_id = vendor_id
         self.merchant_key = merchant_key
         self.is_sandbox = is_sandbox
+        self.currency = currency
 
     def _get_url(self, tag, diagnose):
         urls = (self.is_sandbox and self.__SANDBOX_URLS
@@ -58,14 +75,26 @@ class ControllerLevel_1(object):
         raise Exception('Unknown url tag "' + tag + '"')
 
     def get_client_post_cart_url(self, diagnose):
-        return self._get_url('CLIENT_POST_CART', diagnose) % (self.vendor_id,)
+        return self._get_url(self.__CLIENT_POST_CART, diagnose) % (self.vendor_id,)
 
     def get_server_post_cart_url(self, diagnose):
-        return self._get_url('SERVER_POST_CART', diagnose) % (self.vendor_id,)
+        return self._get_url(self.__SERVER_POST_CART, diagnose) % (self.vendor_id,)
 
     def get_checkout_button_url(self, diagnose):
-        return self._get_url('CHECKOUT_BUTTON', diagnose) % (self.vendor_id,)
+        return self._get_url(self.__MERCHANT_BUTTON, diagnose) % (self.vendor_id,)
     get_cart_post_button = get_checkout_button_url
+
+    def get_order_processing_url(self, diagnose):
+        return self._get_url(self.__ORDER_PROCESSING, diagnose) % (self.vendor_id,)
+
+    def get_client_donation_url(self, diagnose):
+        return self._get_url(self.__CLIENT_DONATION, diagnose) % (self.vendor_id,)
+
+    def get_server_donation_url(self, diagnose):
+        return self._get_url(self.__SERVER_DONATION, diagnose) % (self.vendor_id,)
+
+    def get_donation_button_url(self, diagnose):
+        return self._get_url(self.__DONATION_BUTTON, diagnose) % (self.vendor_id,)
 
     def create_HMAC_SHA_signature(self, xml_text):
         import hmac, sha
@@ -84,7 +113,12 @@ class ControllerLevel_1(object):
         html.url = self.get_client_post_cart_url(diagnose)
         html.button = self.get_checkout_button_url(diagnose)
         html.xml = cart
-        html.html = HTML % (html.url, html.cart, html.signature, html.button)
+        return html
+
+    def prepare_donation(self, order, order_id=None, diagnose=False):
+        html = self.prepare_order(order, order_id, diagnose)
+        html.url = self.get_client_donation_url(diagnose)
+        html.button = self.get_donation_button_url(diagnose)
         return html
 
 class ControllerContext(object):
@@ -334,9 +368,6 @@ class ControllerLevel_2(ControllerLevel_1):
                                    origin=e)
         error="Unknown user handler: '%s'" % (handler_name,)
         raise HandlerError(message=error, context=context)
-
-    def get_order_processing_url(self, diagnose):
-        return self._get_url('ORDER_PROCESSING', diagnose) % (self.vendor_id,)
 
     def _send_xml(self, msg, context, diagnose):
         """
