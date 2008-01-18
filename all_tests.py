@@ -1,6 +1,3 @@
-from xml import dom
-
-
 if __name__ == '__main__':
     import unittest
     runner = unittest.TextTestRunner()
