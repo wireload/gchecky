@@ -554,7 +554,7 @@ class List(Field):
                     raise Exception("List item can not have value '%s': %s" % (idata,
                                                                                item_validity)) 
                 data.append(idata)
-        if data == [] and self.empty_is_none:
+        if data == [] and (self.empty_is_none and not self.required):
             return None
         return data
 
@@ -791,6 +791,8 @@ class Zip(Pattern):
     True
     >>> zip.validate('123*') != True
     True
+    >>> zip.validate('E6 1EX')
+    True
 
     >>> zip_pattern = Zip('dummy', complete=False)
     >>> zip_pattern.validate('SW*')
@@ -799,9 +801,9 @@ class Zip(Pattern):
     def __init__(self, path, complete=True, **kwargs):
         import re
         if complete:
-            pattern = re.compile(r'^[0-9a-zA-Z-]+$')
+            pattern = re.compile(r'^[0-9a-zA-Z- ]+$')
         else:
-            pattern = re.compile(r'^[0-9a-zA-Z-\*]+$')
+            pattern = re.compile(r'^[0-9a-zA-Z- \*]+$')
         Pattern.__init__(self, path, pattern=pattern, **kwargs)
 
     @apply_parent_validation(Pattern, error_prefix="Zip: ")
