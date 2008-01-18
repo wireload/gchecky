@@ -71,18 +71,29 @@ if __name__ == '__main__':
         get_controller()
     )
     print """
-Google Button generated for your shopping cart:
-Signature: %s
-----------
-Cart: %s
------
-Url: %s
-----
-Button image: %s
--------------
-XML: %s
-----
-Full html: %s
-----------
-
-""" % (html.signature, html.cart, html.url, html.button, html.xml, html.html())
+          Google Button generated for your shopping cart:
+          ~~~~~~~~~~~~~~~~~~
+          Signature:
+          ------------------
+          %s
+          ~~~~~~~~~~~~~~~~~~
+          Cart:
+          ------------------
+          %s
+          ~~~~~~~~~~~~~~~~~~
+          Url:
+          ------------------
+          %s
+          ~~~~~~~~~~~~~~~~~~
+          Button image:
+          ------------------
+          %s
+          ~~~~~~~~~~~~~~~~~~
+          XML:
+          ------------------
+          %s
+          ~~~~~~~~~~~~~~~~~~
+          Full html:
+          ------------------
+          %s
+          """ % (html.signature, html.cart, html.url, html.button, html.xml, html.html())
