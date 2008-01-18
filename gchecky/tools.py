@@ -1,17 +1,43 @@
 """
->>> def test_enc_dec(data):
+The module provides two classes encoder and decoder that allow to
+serialize and deserialize python-ish PODs into/from XML.
+Note that data should be simple:
+None, True, False, strings, lists, tupls, dicts
+Anything other than this will trigger an error.
+
+Also note that any circular references in the data will also trigger an error,
+so please do not try to serialize something like:
+>>> a = []
+>>> a.append(a)
+>>> a
+[[...]]
+
+Important notes:
+- tuples are treated as lists and deserialized into lists.
+- any empty list, tuple or dictionary is deserialized into None.
+
+TODO: Expand the notes on how exactly the data values are serialized.
+
+Some doctests:
+
+>>> def test_enc_dec(data, return_res=False):
 ...   from xml.dom.minidom import parseString
 ...   doc = parseString('<?xml version="1.0"?><dummy/>')
 ...   encoder().serialize(data, doc.documentElement)
 ...   xml = doc.toprettyxml('  ')
 ...   data2 = decoder().deserialize(doc.documentElement)
 ...   if data2 != data:
-...       print '--- Expected: ---'
-...       print data
-...       print '--- Got: ---'
-...       print data2
-...       print '=== Xml: ==='
-...       print xml
+...       msg = '''--- Expected: ---
+...                 %s
+...                 --- Got: ---
+...                 %s
+...                 === Xml: ===
+...                 %s
+...       ''' % (data, data2, xml)
+...       if return_res:
+...          return data2
+...       print msg
+
 >>> test_enc_dec(None)
 >>> test_enc_dec(True)
 >>> test_enc_dec(False)
@@ -22,45 +48,64 @@
 >>> test_enc_dec(['1',2])
 >>> test_enc_dec([1])
 >>> test_enc_dec({'':'aa'})
+>>> test_enc_dec(['_'])
+>>> test_enc_dec(['aa',['bb','cc'],[None], None, ['_']])
+>>> test_enc_dec([[False]])
+>>> test_enc_dec([[False], None])
+>>> test_enc_dec([False, True, [False], [[True]], [None]])
+>>> test_enc_dec({'vasya':['aa', 'bb']})
+>>> test_enc_dec({'name':['Peter', 'Mary'], 'age':[11, 15]})
+
+To fix:
+>>> test_enc_dec([], return_res=True) != None
+False
+>>> test_enc_dec({}, return_res=True) != None
+False
 """
 
 TRUE_LABEL = u'True'
 FALSE_LABEL = u'False'
 
 class decoder:
-    """
-#    >>> def test(xml):
-#    ...   from xml.dom.minidom import parseString
-#    ...   doc = parseString(xml)
-#    ...   d = decoder()
-#    ...   return d.deserialize(doc.documentElement)
-#    >>> test('<?xml version="1.0"?><dummy>aaa</dummy>')
-#    >>> test('<?xml version="1.0"?><dummy><_>aaa</_><_>5</_><_>1.6</_></dummy>')
-    """
     def deserialize(self, node):
         data = self._decode_into_dict(node)
         return data
 
+    def _reduce_list(self, l):
+        if not isinstance(l, list):
+            return l
+        if len(l) == 0:
+            return l
+        if len(l) == 1:
+            return l[0]
+        if l[-1] is None:
+            return l[:-1]
+        return l
+
     def _reduce_diction(self, diction):
+        # None value
         if len(diction) == 0:
             return None
-        if len(diction) == 1:
-            if None in diction:
-                assert len(diction[None]) == 1
+
+        # Strings, booleans and None values
+        if len(diction) == 1 and None in diction:
+            if len(diction[None]) == 1:
                 return diction[None][0]
-            if '_' in diction:
-                data = diction['_']
-                if not isinstance(data, list):
-                    data = [data]
-                return data
+            return diction[None]
+
+        # Lists
+        if len(diction) == 1 and '_' in diction:
+            return self._reduce_list(diction['_'])
+
         data = {}
         for key in diction.keys():
             if key is None:
                 data[None] = diction[None]
             else:
-                data[decoder._decode_tag(key)] = diction[key]
+                data[decoder._decode_tag(key)] = self._reduce_list(diction[key])
             # elif data '_'
-        return data
+        diction = data
+        return diction
 
     @classmethod
     def _decode_tag(clazz, tag):
@@ -88,10 +133,10 @@ class decoder:
 
     def _add_to_dict(self, diction, key, data):
         if key not in diction:
-            diction[key] = data
+            diction[key] = [data]
         else:
-            if not isinstance(diction[key], list):
-                diction[key] = [diction[key]]
+#            if not isinstance(diction[key], list):
+#                diction[key] = [diction[key]]
             diction[key].append(data)
 
     @classmethod
@@ -108,8 +153,10 @@ class decoder:
         12L
         >>> decoder._decode_string('11.')
         11.0
-        >>> decoder._decode_string('"some"')
+        >>> decoder._decode_string('some')
         u'some'
+        >>> decoder._decode_string('"some"')
+        u'"some"'
         >>> decoder._decode_string('"some')
         u'"some'
         """
@@ -130,32 +177,12 @@ class decoder:
         except ValueError:pass
         str = unicode(str)
         if str[0] == '"' and str[-1] == '"':
-            original = str[1:-1].replace('\\"', '"')
+            original = (str.replace('\\"', '"'))[1:-1]
             if encoder._escape_string(original) == str:
                 return original
         return unicode(str)
 
 class encoder:
-    """
-#   >>> e = encoder()
-#   >>> def test(data):
-#   ...   from xml.dom.minidom import parseString
-#   ...   doc = parseString('<?xml version="1.0"?><dummy/>')
-#   ...   encoder().serialize(data, doc.documentElement)
-#   ...   return doc.toprettyxml('  ')
-#   ...
-#   >>> test(True)
-#   >>> test(False)
-#   >>> test(15)
-#   >>> test(16.)
-#   >>> test(17.5612)
-#   >>> test('something')
-#   >>> test(u'unicode')
-#   >>> test([1,2,3])
-#   >>> test((1,2,3))
-#   >>> test((1,))
-#   >>> test({'a':'b'})
-    """
     def serialize(self, data, xml_node):
         self.__doc = xml_node.ownerDocument
         self.__markers = {}
@@ -174,8 +201,18 @@ class encoder:
 
     @classmethod
     def _escape_string(clazz, str):
-        # TODO Do we have to escape '<', '>' and '&' ourselves?
-        #      Or is this done by xml.dom.minidom?
+        if str.find('"') < 0:
+            if str != TRUE_LABEL and str != FALSE_LABEL:
+                try: int(str)
+                except:
+                    try: long(str)
+                    except:
+                        try: float(str)
+                        except:
+                            # Great - the string won't be confused with int, long,
+                            # float or boolean - just spit it out then.
+                            return str
+        # Ok, do the safe escaping of the string value
         return '"' + str.replace('"', '\\"') + '"'
 
     def _encode(self, data, node):
@@ -194,7 +231,10 @@ class encoder:
                 tag = '_'
                 parent = node
 
-            for d in data:
+            l = list(data)
+            if len(l) >= 1:
+                l.append(None)
+            for d in l:
                 child = self._create_element(tag)
                 if parent is not None:
                     parent.appendChild(child)
@@ -210,7 +250,6 @@ class encoder:
 
             if isinstance(data, dict):
                 self.__mark(data)
-
                 for key in data.keys():
                     children = self._encode(data[key], key)
                     if isinstance(children, list):
@@ -231,7 +270,8 @@ class encoder:
                 elif data is False:
                     child = self._create_text(FALSE_LABEL)
                 else:
-                    raise ValueError('Not supported.')
+                    raise ValueError('Serialisation of "%s" is not supported.' % (data.__class__,))
+
                 if child is not None:
                     parent.appendChild(child)
             return [parent]
@@ -243,66 +283,6 @@ class encoder:
 
     def __unmark(self, obj):
         del self.__markers[id(obj)]
-
-from xml.marshal import generic
-
-# The original xml.marshal.generic does not know how to handle unicode strings.
-# The code snippet below is taken from the python cookbook:
-# http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/496923
-
-class UnicodeMarshaller(generic.Marshaller):
-    """
-    Extends python marshal class with marshalling of the following value types:
-     - bool into <true/> or <false/>
-     - unicode into <unicode>...</unicode>
-    TODO: more to come?
-    """
-
-    tag_unicode = 'unicode'
-
-    def m_unicode(self, value, diction):
-        name = self.tag_unicode
-        L = ['<' + name + '>']
-        s = value.encode('utf-8')
-        if '&' in s:
-            s = s.replace('&', '&amp;')
-        if '<' in s:
-            s = s.replace('<', '&lt;')
-        if '>' in s:
-            s = s.replace('>', '&gt;')
-        L.append(s)
-        L.append('</' + name + '>')
-        return L
-
-    def m_bool(self, value, diction):
-        if value:
-            return ['<true/>']
-        return ['<false/>']
-
-class UnicodeUnmarshaller(generic.Unmarshaller):
-    def __init__(self):
-        self.unmarshal_meth['unicode'] = ('um_start_unicode','um_end_unicode')
-        self.unmarshal_meth['true'] = ('um_start_true','um_end_true')
-        self.unmarshal_meth['false'] = ('um_start_false','um_end_false')
-        # super maps the method names to methods
-        generic.Unmarshaller.__init__(self)
-
-    um_start_unicode = generic.Unmarshaller.um_start_generic
-    um_start_true = generic.Unmarshaller.um_start_generic
-    um_start_false = generic.Unmarshaller.um_start_generic
-
-    def um_end_unicode(self, name):
-        ds = self.data_stack
-        # the value is a utf-8 encoded unicode
-        ds[-1] = ''.join(ds[-1])
-        self.accumulating_chars = 0
-
-    def um_end_true(self, name):
-        ds[-1] = true
-        self.accumulating_chars = 0
-    def um_end_false(self, name):
-        ds[-1] = false
-        self.accumulating_chars = 0
 
 if __name__ == "__main__":
     def run_doctests():

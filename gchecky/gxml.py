@@ -357,7 +357,10 @@ class Node(object):
             try:
                 fnode = field.get_any_node_for_path(node)
 
-                data = fnode and field.load(fnode)
+                if fnode is None:
+                    data = None
+                else:
+                    data = field.load(fnode)
 
                 if field.save_node_and_xml:
                     # Store the original DOM node
@@ -384,10 +387,11 @@ class Node(object):
     def __eq__(self, other):
         if not isinstance(other, Node):
             return False
+
         for field in self.fields():
-            if hasattr(self, field) != hasattr(other, field):
+            if not(hasattr(self, field) == hasattr(other, field)):
                 return False
-            if hasattr(self, field) and getattr(self, field) != getattr(other, field):
+            if hasattr(self, field) and not(getattr(self, field) == getattr(other, field)):
                 return False
         return True
 
@@ -495,10 +499,12 @@ class List(Field):
     list_item = None
 
     # TODO required => default=[]
-    def __init__(self, path, list_item, **kwargs):
+    def __init__(self, path, list_item, empty_is_none=True, **kwargs):
         """Initializes the List instance.
         @param path: L{Field.path}
         @param list_item: a meta-L{Field} instance describing the list items
+        @param empty_is_none: If True then when loading data an empty list []
+                              would be treated as None value. True by default.
         """ 
         Field.__init__(self, path, **kwargs)
         if self.path_attribute is not None:
@@ -506,6 +512,7 @@ class List(Field):
         if list_item is None or not isinstance(list_item, Field):
             raise Exception('List item (%s) has to be a Field instance' % (list_item,))
         self.list_item = list_item
+        self.empty_is_none = empty_is_none
 
     def validate(self, data):
         """Checks that the data is a valid sequence."""
@@ -547,6 +554,8 @@ class List(Field):
                     raise Exception("List item can not have value '%s': %s" % (idata,
                                                                                item_validity)) 
                 data.append(idata)
+        if data == [] and self.empty_is_none:
+            return None
         return data
 
     def __repr__(self):
@@ -871,15 +880,20 @@ class Any(Field):
     - <field>_xml contains the original XML text
     - <field>_dom contains the corresponding XML DOM node
     """
-    def data2str(self, data):
-        from gchecky.tools import UnicodeMarshaller
-        return UnicodeMarshaller().dumps(data)
-    def str2data(self, text):
-        from gchecky.tools import UnicodeUnmarshaller
-        try:
-            return UnicodeUnmarshaller().loads(text)
-        except:
-            return False
+    def __init__(self, *args, **kwargs):
+        obj = super(Any, self).__init__(*args, **kwargs)
+        if self.path_attribute is not None:
+            raise ValueError('gxml.Any field cannot be bound to an attribute!')
+        return obj
+
+    def save(self, node, data):
+        from gchecky.tools import encoder
+        return encoder().serialize(data, node)
+
+    def load(self, node):
+        from gchecky.tools import decoder
+        return decoder().deserialize(node)
+
     def validate(self, data):
         # Always return True, since any data is allowed
         return True

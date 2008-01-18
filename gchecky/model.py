@@ -21,7 +21,7 @@ questions about GC API functioning.
 from gchecky import gxml
 from gchecky.data import CountryCode, PresentOrNot
 
-def test_document(doc, xml_text):
+def test_document(doc, xml_text=None):
     """
     Method used in doctests: ensures that a document is properly serialized.
     """
@@ -43,23 +43,34 @@ def test_document(doc, xml_text):
         # this form a 'canonical' one).
         return text.replace('\n', '').replace(' ', '')
 
-    expected_xml = normalize_xml(xml_text)
+    expected_xml = ((xml_text is not None) and normalize_xml(xml_text)) or None
     obtained_xml = normalize_xml(doc.toxml(pretty='  '))
 
-    if expected_xml != obtained_xml:
+    if expected_xml is not None and expected_xml != obtained_xml:
         print "Expected:\n\n%s\n\nGot:\n\n%s\n" % (xml_text, doc.toxml('  '))
 
-def test_node(node, xml_text):
+    doc2 = gxml.Document.fromxml(doc.toxml())
+    if not (doc == doc2):
+        print '''
+              Failed to correctly interpret the generated XML for this document:
+              Original:
+              %s
+              Parsed:
+              %s
+              ''' % (doc.toxml(pretty=True), doc2.toxml())
+
+def test_node(node, xml_text=None):
     """
     Method used in doctests. Ensure that a node is properly serialized.
     """
     class Dummy(gxml.Document):
         tag_name='dummy'
         data=gxml.Complex('node', node.__class__, required=True)
-    xml_text = xml_text.replace('<', '  <')
-    # TODO ...just ugly (below)
-    test_document(Dummy(data=node),
-                  "<dummy xmlns='http://checkout.google.com/schema/2'>%s</dummy>" % (xml_text,))
+    if xml_text is not None:
+        xml_text = xml_text.replace('<', '  <')
+        # TODO ...just ugly (below)
+        xml_text = "<dummy xmlns='http://checkout.google.com/schema/2'>%s</dummy>" % (xml_text,)
+    test_document(Dummy(data=node), xml_text)
 
 CURRENCIES = ('USD', 'GBP')
 
@@ -77,6 +88,11 @@ class digital_content_t(gxml.Node):
                                       values=DISPLAY_DISPOSITION)
 
 class item_t(gxml.Node):
+    """
+    >>> test_node(item_t(name='Peter', description='The Great', unit_price=price_t(value=1, currency='GBP'), quantity=1, merchant_item_id='custom_merchant_item_id',
+    ...                  merchant_private_item_data=['some', {'private':'data', 'to':['test','the'],'thing':None}, '!! Numbers: ', None, False, True, [11, 12., [13.4]]])
+    ...          )
+    """
     name                = gxml.String('item-name')
     description         = gxml.String('item-description')
     unit_price          = gxml.Complex('unit-price', price_t)
