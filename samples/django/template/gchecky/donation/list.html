@@ -1,0 +1,21 @@
+{% extends "gchecky/list.html" %}
+
+{% block title %}Donations demo{% endblock %}
+
+{% block page_head %}
+
+<h2>Make a donation:</h2>
+<table width="100%">
+<tr>
+{% for donation in donations %}
+    <td width="*" align="center"><b>{{ donation.amount }}</b><br />{{ donation.title }}</td>
+{% endfor %}
+</tr>
+<tr>
+{% for donation in donations %}
+    <td width="*" align="center">{{ donation.cart.html|safe }}</td>
+{% endfor %}
+</tr>
+</table>
+
+{% endblock page_head %}

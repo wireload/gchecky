@@ -1,0 +1,23 @@
+{% extends "gchecky/base.html" %}
+
+{% block title %}New order{% endblock %}
+
+{% block page %}
+
+<form action="confirm/" method="POST">
+  <table>
+  {% for item in item_list %}
+  <tr>
+    <td><a href="{{ item.get_image_url }}">{{ item.get_image_url}}</a></td>
+    <td>
+      <input type="checkbox" id="item_{{item.id}}" checked name="item_{{item.id}}" value="{{ item.id }}" />
+    </td>
+    <td><label for="item_{{item.id}}">{{ item.title }}</label></td>
+    <td>{{ item.get_friendly_price }}</td>
+  </tr>
+  {% endfor %}
+  </table>
+  <input type="submit" value="Checkout" />
+</form>
+
+{% endblock %}

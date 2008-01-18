@@ -1,0 +1,45 @@
+{% extends "gchecky/base.html" %}
+
+{% block page %}
+
+<h1>Order N{{ order.id }}</h1>
+<dl>
+    <dt>Type</dt>
+        <dd><a href="/{{ order.nature }}">{{ order.nature }}</a></dd>
+    <dt>Owner</dt>
+        <dd>{{ order.user_id }}</dd>
+    <dt>Created</dt>
+        <dd>{{ order.creates|date }}</dd>
+</dl>
+
+<ul>
+{% for purchase in order.purchase.all %}
+    <li>{{ purchase.title }} &mdash; {{ purchase.get_friendly_total_price }}</li>
+{% endfor %}
+</ul>
+
+<h2>Messages:</h2>
+a{{order.message_set.all|length}}b
+<table id="message_list">
+<tr>
+    <th>#</th>
+    <th>tag</th>
+    <th>Message</th>
+</tr>
+{% for message in order.message_set.all %}
+<tr>
+    <td rowspan="3">{{ message.serial }}</td>
+    <td rowspan="3">{{ message.tag }}</td>
+    <td class="code"><pre>{{ message.input_xml }}</pre></td>
+</tr>
+<tr>
+    <td class="code"><pre>{{ message.output_xml }}</pre></td>
+</tr>
+<tr class="error">
+{% if message.error %}
+    <td class="code"><pre>{{ message.description }}</pre></td>
+{% endif %}
+</tr>
+{% endfor %}
+</table>
+{% endblock page %}

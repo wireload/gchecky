@@ -1,0 +1,23 @@
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}/css/main.css" />
+
+    <title>{% block title %}Gchecky demo Django application{% endblock %}</title>
+
+    <script type="text/javascript" src="{{MEDIA_URL}}/js/mootools-release-1.11.js"></script>
+    <script type="text/javascript" src="{{MEDIA_URL}}/js/gchecky.js"></script>
+</head>
+<body>
+<div id="page"><div id="page_content">
+{% block page %}
+    <a href="digital/">Digital store</a>
+    <br />
+    <a href="donation/">Make a donation</a>
+{% endblock %}
+</div></div>
+<div id="sidebar"><div id="sidebar_content">
+{% block sidebar %}
+{% endblock sidebar %}
+</div></div>
+</body>
+</html>

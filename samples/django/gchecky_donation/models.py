@@ -1,0 +1,1 @@
+# No custom DB data for donation - evrything is kept in gchecky_common.

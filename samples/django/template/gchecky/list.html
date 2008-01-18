@@ -1,0 +1,38 @@
+{% extends "gchecky/base.html" %}
+
+{% block title %}List of processed orders{% endblock %}
+
+{% block page %}
+
+{% block page_head %}
+<h2>The list of orders</h2>
+{% endblock page_head %}
+
+<hr />
+
+<table id="order_list" border="1">
+<tr>
+    <th></th>
+    <th>age</th>
+    <th>last event</th>
+    <th class="user">owner</th>
+    <th>items</th>
+    <th>price</th>
+    <th>money</th>
+    <th>state</th>
+</tr>
+{% for order in order_list %}
+<tr class="{{order.payment}}">
+    <td class="id"     ><a href="{{order.get_absolute_url}}">{{order.id}}</a></td>
+    <td class="time"   ><a href="{{order.get_absolute_url}}">{{order.created|timesince}}</a></td>
+    <td class="time"   ><a href="{{order.get_absolute_url}}">{{order.updated|timesince}}</a></td>
+    <td                ><a href="{{order.get_absolute_url}}">{{order.user_id}}</a></td>
+    <td class="count"  ><a href="{{order.get_absolute_url}}">{{order.purchase_set.count}}</a></td>
+    <td class="price"  ><a href="{{order.get_absolute_url}}">{{order.get_friendly_total_price}}</a></td>
+    <td class="state"  ><a href="{{order.get_absolute_url}}">{{order.state}}</a></td>
+    <td class="payment"><a href="{{order.get_absolute_url}}">{{order.payment}}</a></td>
+</tr>
+{% endfor %}
+</table>
+
+{% endblock page %}

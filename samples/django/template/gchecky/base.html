@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}
+    Gchecky demo Django application
+{% endblock %}
+
+{% block page %}
+<h1>GChecky demo</h1>
+
+<p>Welcome to gchecky demo installation!</p>
+
+<p>You can try ordering from the demo stores and watch the system deal with
+XML API Level 2 notifications from google. This application demonstrates
+how to easilly implement order processing system using Google Checkout.</p>
+
+<p>This demo uses <strong>sandbox</strong> which means, that <strong>no
+money transfer is taking place</strong>. To use the demo you would
+need an account on the google sandbox. Follow the official guide.</p>
+
+{% endblock page %}
+
+{% block sidebar %}
+    <div id="sidemenu">
+        <div id="digital"><a href="/digital/">Digital store</a></div>
+        <div id="donation"><a href="/donation/">Donations</a></div>
+        <div id="normal"><a href="/normal/">Trade goods</a></div>
+    </div>
+{% endblock sidebar %}
