@@ -182,9 +182,9 @@ class DjangoGController(Controller):
             error = 'Unknown error'
 
         description = "%s:\n%s\n\nOriginal Error:\n%s\n%s" % (error,
-                                                          exception.message,
-                                                          exception.origin,
-                                                          exception.traceback)
+                                                              exception,
+                                                              exception.origin,
+                                                              exception.traceback)
         # TODO: exception trace
         self.__log(context=context, tag=tag, error=error, description=description)
         return "%s\n\n%s" % (error, description)

@@ -548,7 +548,7 @@ class ControllerLevel_2(ControllerLevel_1):
                 input = gxml.Document.fromxml(input_xml)
                 context.message = input
             except Exception, e:
-                error = 'Error reading XML: %s' % (e.message,)
+                error = 'Error reading XML: %s' % (e,)
                 raise DataError(message=error, context=context, origin=e)
     
             result = self.receive_message(message=input,
@@ -560,7 +560,7 @@ class ControllerLevel_2(ControllerLevel_1):
                 response_xml = result.toxml()
                 context.response_xml = response_xml
             except Exception, e:
-                error = 'Error reading XML: %s' % (e.message,)
+                error = 'Error reading XML: %s' % (e,)
                 raise DataError(message=error, context=context, origin=e)
             self.__call_handler('on_xml_received', context=context)
             return response_xml
@@ -609,7 +609,7 @@ class ControllerLevel_2(ControllerLevel_1):
                 error = unicode(result)
             except Exception, e:
                 error = "Invalid value returned by handler '%s': %s" % (handler_name,
-                                                                        e.message)
+                                                                        e)
                 raise HandlerError(message=error, context=context, origin=e)
 
         if error is not None:
