@@ -496,13 +496,13 @@ class ControllerLevel_2(ControllerLevel_1):
     def charge_order(self, order_id, amount):
         self.send_message(gmodel.charge_order_t(
             google_order_number = order_id,
-            amount = gmodel.price_t(value = amount, currency = 'GBP')
+            amount = gmodel.price_t(value = amount, currency = self.currency)
             ))
 
     def refund_order(self, order_id, amount, reason, comment=None):
         self.send_message(gmodel.refund_order_t(
             google_order_number = order_id,
-            amount = gmodel.price_t(value = amount, currency = 'GBP'),
+            amount = gmodel.price_t(value = amount, currency = self.currency),
             reason = reason,
             comment = comment or None
             ))

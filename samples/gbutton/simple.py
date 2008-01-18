@@ -1,6 +1,13 @@
 from gchecky import model as gmodel
 from gchecky.controller import Controller
 
+# Google checkout information
+# Gchecky demo sandbox account info:
+gcheckout_vendor_id    = '618492934414682'
+gcheckout_merchant_key = 't2mBWWytbm_JlIiLzaemoQ'
+gcheckout_is_sandbox   = True # True for testing, False for production
+gcheckout_currency     = 'GBP' # 'USD' or 'GBP'
+
 def create_cart():
     """This method creates a sample shopping cart.
     The cart contain 2 apples and 5 oranges.
@@ -11,7 +18,7 @@ def create_cart():
                                 name = 'Apple',
                                 description = 'A Golden Apple for You, my dear',
                                 unit_price = gmodel.price_t(
-                                    value=0.15, currency='GBP'
+                                    value=0.15, currency=gcheckout_currency
                                 ),
                                 quantity = 2
                             ),
@@ -19,7 +26,7 @@ def create_cart():
                                 name = 'Orange',
                                 description = 'Vitamin C is the powa',
                                 unit_price = gmodel.price_t(
-                                    value=.07, currency='GBP'
+                                    value=.07, currency=gcheckout_currency
                                 ),
                                 quantity = 5
                             )]
@@ -31,13 +38,15 @@ def create_cart():
     return cart
 
 def get_controller():
-    """Creates a sample controller instance.
+    """
+    Creates a sample controller instance.
     In a real application the controller should be a singleton, and should
-    be obtained accordingly."""
-    controller = Controller(
-                            vendor_id='my_vendro_ID_bla',
-                            merchant_key='my_merchant_KEY_blabla'
-                            )
+    be obtained accordingly.
+    """
+    controller = Controller(vendor_id    = gcheckout_vendor_id,
+                            merchant_key = gcheckout_merchant_key,
+                            is_sandbox   = gcheckout_is_sandbox,
+                            currency     = gcheckout_currency)
     return controller
 
 def cart_to_html(cart, controller):
@@ -76,4 +85,4 @@ XML: %s
 Full html: %s
 ----------
 
-""" % (html.signature, html.cart, html.url, html.button, html.xml, html.html,)
+""" % (html.signature, html.cart, html.url, html.button, html.xml, html.html())
