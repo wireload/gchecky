@@ -12,6 +12,18 @@ class DjangoGController(Controller):
     also automatically charges new orders. Nothing fancy.
     """
 
+    def __init__(self, automatically_charge=True, *args, **kwargs):
+        """
+        For the sake of the Demo we add a parameter automatically_charge
+        that indicates whether or not the controller should send
+        a charge command to google checkout.
+        If in your Google Checkout account settings you choose
+         "Automatically authorize and *charge* the buyer's credit card"
+        then it would be an error to send a 'charge' command to google servers.
+        """
+        self.automatically_charge = automatically_charge
+        return super(DjangoGController, self).__init__(*args, **kwargs)
+
     def on_retrieve_order(self, order_id, context=None):
         """
         Get the order object from DB that corresponds to this google order id.
@@ -78,17 +90,22 @@ class DjangoGController(Controller):
         React to the order state change.
         """
         assert order is not None
-        order.state = message.new_fulfillment_order_state
-        order.payment = message.new_financial_order_state
+        if message.new_fulfillment_order_state != message.previous_financial_order_state:
+            order.state = message.new_fulfillment_order_state
+        if message.new_financial_order_state != message.previous_financial_order_state:
+            order.payment = message.new_financial_order_state
         order.save()
 
         if order.state == 'NEW':
             if order.payment == 'CHARGEABLE':
                 if order.total > order.charges_pending:
-                    amount = order.total - (order.charges + order.charges_pending)
-                    order.charges_pending += amount
-                    self.charge_order(order_id, amount)
-                    order.save()
+                    if self.automatically_charge:
+                        # Only send charge command if your account does not
+                        # tell google to do it automatically.
+                        amount = order.total - (order.charges + order.charges_pending)
+                        order.charges_pending += amount
+                        self.charge_order(order_id, amount)
+                        order.save()
 
         return gmodel.ok_t()
 
@@ -234,5 +251,10 @@ def get_controller():
             vendor_id    = settings.gcheckout_vendor_id,
             merchant_key = settings.gcheckout_merchant_key,
             currency     = settings.gcheckout_currency,
-            is_sandbox   = settings.gcheckout_is_sandbox)
+            is_sandbox   = settings.gcheckout_is_sandbox,
+            # Demo gchecky account is configured so that new orders are
+            # automatically charged by Google, therefore do not send these
+            # command, because it would be an error. However if your GC account
+            # does not automatically charge new orders, then set this to True.
+            automatically_charge = False)
     return __controller__
