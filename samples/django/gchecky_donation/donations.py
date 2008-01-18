@@ -12,7 +12,7 @@ AVAILABLE_DONATIONS=(
 
 def prepare_simple_donation(controller, amount, title):
     # TODO: get view url
-    CONTINUE_SHOPPING_URL = '%s/donation/continue' % (request.get_host(),)
+    CONTINUE_SHOPPING_URL = '%s/donation/continue' % ('http://demo.gchecky.com',)
     return controller.prepare_donation(
         order = gmodel.checkout_shopping_cart_t(
             shopping_cart = gmodel.shopping_cart_t(
