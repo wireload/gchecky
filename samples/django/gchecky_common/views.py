@@ -1,6 +1,8 @@
 from django.http import Http404, HttpResponse, HttpResponseServerError
+from django.shortcuts import get_object_or_404
 from gchecky_common import render_to_response
 from gchecky_common.controller import get_controller
+from gchecky_common.models import Order
 
 def process_google_message(request, input_xml=None, safe_to_raise=False):
     controller = get_controller()
@@ -33,6 +35,5 @@ def test_processing_message(request, template):
                               request=request)
 
 def order_details(request, order_id, template, template_object):
-    from gchecky_common.models import Order
-    order = Order.objects.get(id=order_id)
+    order = get_object_or_404(Order, id=order_id)
     return render_to_response(template, {template_object:order}, request=request)
