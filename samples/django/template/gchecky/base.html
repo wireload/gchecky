@@ -4,30 +4,82 @@
 {% endblock %}
 
 {% block page %}
-<h1>GChecky demo</h1>
+<h1>Gchecky demo</h1>
 
-<p>Welcome to gchecky demo installation!</p>
+<p>Welcome to <a href="http://gchecky.googlecode.com/">gchecky library</a> demo!</p>
 
-<p>You can try ordering from the demo stores and watch the system deal with
-XML API Level 2 notifications from google. This application demonstrates
-how to easilly implement order processing system using Google Checkout.</p>
+<p>This is a simple <a href="http://www.djangoproject.com">Django</a> application that demonstrates
+how to easily implement a custom order processing system in python using
+<strong>Google Checkout</strong>, <strong>Django</strong> and <strong>gchecky</strong>.</p>
+
+<p>Gchecky library is <a href="http://code.google.com/p/gchecky/">free to use</a> and
+its <a href="http://gchecky.googlecode.com/svn/trunk/">open source</a>.</p>
+
+<p>If you want to integrate Google Checkout into your order processing
+system written in python &mdash; feel to contact us at
+<a href="mailto:gchecky+job.offer@gmail.com">gchecky+job.offer@gmail.com</a> for
+any job offer.</p>
 
 <p>This demo uses <strong>sandbox</strong> which means, that <strong>no
-money transfer is taking place</strong>. To use the demo you would
-need an account on the google sandbox. Follow the official guide.</p>
+money transfer is taking place</strong>.</p>
+<p>To use the demo you will need a buyer <strong>sanbox</strong> account
+(<a href="http://sandbox.google.com/checkout">Google Checkout sandbox</a>).</p>
+
+<p>While registering for a new buyer <strong>sandbox</strong> account use these card numbers:
+
+<table>
+<tr>
+    <th>Card Type</th>
+    <th>Card Number</th>
+    <th>CVC</th>
+    <th>Expiration Date</th>
+</tr>
+<tr>
+    <td>American Express</td>
+    <td>3782 8224 6310 005</td>
+    <td>any four digits</td>
+    <td>any future date</td>
+</tr>
+<tr>
+    <td>Discover</td>
+    <td>6011 1111 1111 1117</td>
+    <td>any four digits</td>
+    <td>any future date</td>
+</tr>
+<tr>
+    <td>MasterCard</td>
+    <td>5555 5555 5555 4444</td>
+    <td>any four digits</td>
+    <td>any future date</td>
+</tr>
+<tr>
+    <td>VISA</td>
+    <td>4111 1111 1111 1111</td>
+    <td>any four digits</td>
+    <td>any future date</td>
+</tr>
+</table>
+
+Taken from official <a href="http://code.google.com/apis/checkout/developer/index.html#integration_overview">Getting Started with Google Checkout</a> guide.
+
+</p>
 
 {% endblock page %}
 
 {% block sidebar %}
     <div id="sidemenu">
+        <div id="home"><a href="/">Home</a></div>
+        <hr />
         <div id="digital"><a href="/digital/">Digital store</a></div>
         <div id="donation"><a href="/donation/">Donations</a></div>
         <hr />
         <div id="normal"><a href="/normal/">Trade goods</a></div>
         <p><small>'Trade goods' are not yet implemented</small></p>
-<!--
         <hr />
-        <div id="admin"><a href="/admin/">Admin</a></div>
--->
+        <div id="gchecky"><a href="http://gchecky.googlecode.com">Gchecky</a></div>
+        <hr />
+        <div id="sources"><a href="http://code.google.com/p/gchecky/downloads/list">Downloads</a></div>
+        <div id="issues"><a href="http://code.google.com/p/gchecky/issues/list">Bugs/errors</a></div>
+        <div id="groups"><a href="http://groups.google.com/group/gchecky">Forum</a></div>
     </div>
 {% endblock sidebar %}

@@ -18,8 +18,8 @@
 <table id="order_list" border="1">
 <tr>
     <th>#</th>
-    <th>age</th>
-    <th>last event</th>
+    <th>created</th>
+    <th>msgs</th>
     <th class="user">owner</th>
     <th>items</th>
     <th>price</th>
@@ -30,7 +30,7 @@
 <tr class="{{order.payment}}">
     <td class="id"     ><a href="{{order.get_absolute_url}}">{{order.id}}</a></td>
     <td class="time"   ><a href="{{order.get_absolute_url}}">{{order.created|timesince}}</a></td>
-    <td class="time"   ><a href="{{order.get_absolute_url}}">{{order.updated|timesince}}</a></td>
+    <td class="count"  ><a href="{{order.get_absolute_url}}">{{order.message_set.count}}</a></td>
     <td                ><a href="{{order.get_absolute_url}}">{{order.user_id}}</a></td>
     <td class="count"  ><a href="{{order.get_absolute_url}}">{{order.purchase_set.count}}</a></td>
     <td class="price"  ><a href="{{order.get_absolute_url}}">{{order.get_friendly_total_price}}</a></td>
