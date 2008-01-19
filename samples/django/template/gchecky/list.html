@@ -10,16 +10,21 @@
 
 <hr />
 
+<p>The orders (below) are being processed in the real time on the server side.</p>
+
+<p>Hit <strong>Refresh</strong> button in your browser to update the order list
+(or just press <strong>F5</strong> if you are using Firefox, Opera, or IE).</p>
+
 <table id="order_list" border="1">
 <tr>
-    <th></th>
+    <th>#</th>
     <th>age</th>
     <th>last event</th>
     <th class="user">owner</th>
     <th>items</th>
     <th>price</th>
-    <th>money</th>
     <th>state</th>
+    <th>money</th>
 </tr>
 {% for order in order_list %}
 <tr class="{{order.payment}}">
