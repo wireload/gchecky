@@ -33,7 +33,7 @@
     <td class="count"  ><a href="{{order.get_absolute_url}}">{{order.message_set.count}}</a></td>
     <td                ><a href="{{order.get_absolute_url}}">{{order.user_id}}</a></td>
     <td class="count"  ><a href="{{order.get_absolute_url}}">{{order.purchase_set.count}}</a></td>
-    <td class="price"  ><a href="{{order.get_absolute_url}}">{{order.get_friendly_total_price}}</a></td>
+    <td class="price"  ><a href="{{order.get_absolute_url}}">{{order.total}} {{order.currency}}</a></td>
     <td class="state"  ><a href="{{order.get_absolute_url}}">{{order.state}}</a></td>
     <td class="payment"><a href="{{order.get_absolute_url}}">{{order.payment}}</a></td>
 </tr>
