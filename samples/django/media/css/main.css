@@ -1,0 +1,256 @@
+body {
+    background:#339;
+    margin:0;padding:0;
+    font:.9em 'Lucida Grande', 'Arial', 'Helvetica', sans-serif;
+    color:#333;
+}
+
+a, a:hover {
+    color:#56a;
+}
+
+a:visited {
+    color:#459;
+}
+
+table {
+    padding:0;
+    margin:1em 0;
+    border-collapse:collapse;
+    font-size:inherit;
+    width:100%;
+}
+table, table td, table th {
+    border:1px solid #eee;
+    padding:.3em .8em;
+}
+table th {
+    background:#bce;
+    font-weight:normal;
+    color:#222;
+}
+
+table td {
+    background:white;
+}
+
+form {
+    margin:0;padding:0;border:0;
+}
+
+#order_list td {
+    white-space:nowrap;
+}
+
+#order_list .REVIEWING td {
+    background-color:#fff;
+}
+
+#order_list .CHARGEABLE td {
+    background-color:#efe;
+}
+
+#order_list .CHARGING td {
+    background-color:#dfd;
+}
+
+#order_list .CHARGED td {
+    background-color:#afa;
+}
+
+#order_list .PAYMENT_DECLINED td {
+    background-color:#fce;
+}
+
+#order_list .CANCELLED td {
+    background-color:#fcc;
+}
+
+#order_list .CANCELLED_BY_GOOGLE td {
+    background-color:#fbb;
+}
+
+#order_list .id a {
+    background-position:100% 50%;
+    background-repeat:no-repeat;
+    padding-right:20px;
+}
+#order_list .payment a {
+    background-position:0 50%;
+    background-repeat:no-repeat;
+    padding-left:20px;
+}
+#order_list .REVIEWING .id a,
+#order_list .REVIEWING .payment a {
+    background-image:url(images/application_form.png);
+}
+#order_list .CHARGEABLE .id a,
+#order_list .CHARGEABLE .payment a {
+    background-image:url(images/application_form_add.png);
+}
+#order_list .CHARGING .id a,
+#order_list .CHARGING .payment a {
+    background-image:url(images/application_form_edit.png);
+}
+#order_list .CHARGED .id a,
+#order_list .CHARGED .payment a {
+    background-image:url(images/accept.png);
+}
+#order_list .PAYMENT_DECLINED .id a,
+#order_list .PAYMENT_DECLINED .payment a {
+    background-image:url(images/application_form_delete.png);
+}
+#order_list .CANCELLED .id a,
+#order_list .CANCELLED .payment a {
+    background-image:url(images/delete.png);
+}
+#order_list .CANCELLED_BY_GOOGLE .id a,
+#order_list .CANCELLED_BY_GOOGLE .payment a {
+    background-image:url(images/cancel.png);
+}
+
+
+td.id, td.price {
+    text-align: right
+}
+
+#page {
+    line-height:1.6em;
+    margin:0;padding:0;
+    margin-left:12em;
+    background:#ddd;
+    height:100%;
+}
+#page_content {
+    padding:1em 3em 2em 2em;
+    max-width:62em;
+    min-width:35em;
+    background:white;
+    padding-bottom:20em;
+    margin-bottom:.5em;
+}
+
+#sidebar {
+    width:12em;
+    position:absolute;
+    top:0;left:0;
+}
+
+#sidebar_content {
+    padding:1em;
+}
+#sidebar {
+    color:white;
+}
+
+#sidemenu div {
+    padding:0;margin:0;
+}
+#sidemenu div a {
+    display:block;
+    margin:1em 0;
+    padding:.5em;
+    padding-left:2.5em;
+/*    border:1px dotted #339; */
+    background-position:.5em 50%;
+    background-repeat:no-repeat;
+    color:#f7f7f7;
+    background-color:#999;
+}
+
+/*
+#sidemenu div a:hover:after {
+    content:' ⇒';
+}
+*/
+#sidemenu a:hover {
+    background-color:#aaa;
+/*
+    border:1px solid #bbb;
+    text-decoration:none;
+*/
+    color:white;
+}
+
+#sidemenu #home a {
+    background-image:url(images/house.png);
+}
+
+#sidemenu #donation a {
+    background-image:url(images/color_wheel.png);
+}
+#sidemenu #digital a {
+    background-image:url(images/controller.png);
+}
+#sidemenu #normal a {
+    background-image:url(images/box.png);
+}
+
+#sidemenu #gchecky a {
+    background-image:url(images/heart.png);
+}
+
+#sidemenu #sources a {
+    background-image:url(images/bricks.png);
+}
+#sidemenu #issues a {
+    background-image:url(images/bug.png);
+}
+#sidemenu #groups a {
+    background-image:url(images/comments.png);
+}
+
+#message_list th,
+#message_list td {
+    border-color:#555;
+}
+#message_list td {
+    white-space:nowrap;
+}
+
+#message_list td.code {
+    white-space:normal;
+    overflow:hidden;
+    padding:0;
+}
+
+#message_list td.code pre {
+    overflow:scroll;
+    padding:.5em 1em;
+    margin:0;
+}
+#message_list .error td pre {
+    width:auto;
+    padding-left:3em;
+    background:#fee url(images/cancel.png) 1em 50% no-repeat;
+}
+
+.donation {
+    float:left;
+    display:block;
+    width:15em;
+    padding:.5em;
+    margin:.5em;
+    text-align:center;
+    border:1px solid #999;
+}
+.donation .amount {
+    font-weight:bold;
+}
+.donation .title {
+    white-space:nowrap;
+    padding-bottom:.3em;
+}
+
+.donation form {
+    padding-top:4px;
+    border:1px solid white;
+}
+.donation form:hover {
+    border:1px solid #ddd;
+}
+
+hr {
+    clear:both;
+    margin:0;
+}
