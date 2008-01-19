@@ -22,7 +22,7 @@ def confirm_order(request, template):
     ITEMS_VAR_NAME = 'item_'
     CONTINUE_SHOPPING_URL = make_back_url(request, '/digital/thanks')
     FRENCH_TAX = 0.196 # In France in general they apply the TAX of 19.6%
-    if request.method == 'POST':
+    if request.POST:
         items = []
         for key in request.POST.keys():
             if key[:len(ITEMS_VAR_NAME)] == ITEMS_VAR_NAME:

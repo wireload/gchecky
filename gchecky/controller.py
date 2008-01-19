@@ -1,5 +1,5 @@
 from base64 import b64encode
-
+from django.utils.html import escape as html_escape
 from gchecky import gxml
 from gchecky import model as gmodel
 
@@ -23,12 +23,12 @@ class html_order(object):
         and the submit button in the form of Google Checkout button image.
         """
         return """
-               <form method="POST" action="%s">
+               <form method="post" action="%s">
                    <input type="hidden" name="cart" value="%s" />
                    <input type="hidden" name="signature" value="%s" />
-                   <input type="image" src="%s" border="0" alt="Google Checkout" /> 
+                   <input type="image" src="%s" alt="Google Checkout" /> 
                </form>
-               """ % (self.url, self.cart, self.signature, self.button)
+               """ % (html_escape(self.url), self.cart, self.signature, html_escape(self.button))
 
 class ControllerLevel_1(object):
     __MERCHANT_BUTTON  = 'MERCHANT_BUTTON'
