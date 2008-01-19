@@ -1,0 +1,26 @@
+{% extends "gchecky/base.html" %}
+
+{% block title %}
+    Your purchased item '{{ item.title }}' content.
+{% endblock title %}
+
+{% block page %}
+<h1>Your digital item '{{ item.title }}'.</h1>
+
+<p>{{ item.brief }}</p>
+
+<!-- image -->
+
+<p><strong>Description:</strong>
+{{ item.description }}
+</p>
+
+<p><strong>Price:</strong>
+    {{ item.price }} {{ item.currency }}.
+</p>
+
+<hr />
+
+<p>Back to <a href="/digital/">the list of digital orders</a>.</p>
+
+{% endblock page %}
