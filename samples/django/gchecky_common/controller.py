@@ -57,7 +57,13 @@ class DjangoGController(Controller):
                 nature = ntag
 
         # Good to create a fresh new order in DB
-        order = Order(user_id   = 'TODO',
+        if message.buyer_billing_address.contact_name is not None:
+            owner_id = message.buyer_billing_address.contact_name
+        elif message.buyer_billing_address.company_name is not None:
+            owner_id = message.buyer_billing_address.company_name
+        else:
+            owner_id = message.buyer_id
+        order = Order(user_id   = owner_id,
                       nature    = nature,
                       google_id = order_id,
                       cart_xml  = message.toxml(),
