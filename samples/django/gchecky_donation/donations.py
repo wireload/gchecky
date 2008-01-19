@@ -3,11 +3,12 @@ from gchecky_common.controller import get_controller
 
 # The available donations list: [(amount, label)+]
 AVAILABLE_DONATIONS=(
-    (10.,  'Bandwidth costs'),
+    (5.,   'Small donation'),
+    (15.,  'Bandwidth costs'),
     (25.,  'Development support'),
-    (50.,  'General purpose contribution'),
-    (100., 'Generous gift'),
-    (200., 'New server HDD'),
+    (50.,  'Important contribution'),
+    (150., 'Generous gift'),
+    (250., 'New server HDD'),
 )
 
 def prepare_simple_donation(controller, amount, title):
