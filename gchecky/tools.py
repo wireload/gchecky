@@ -68,6 +68,11 @@ FALSE_LABEL = u'False'
 
 class decoder:
     def deserialize(self, node):
+        """
+        >>> from xml.dom.minidom import parseString
+        >>> doc = parseString('<?xml version="1.0"?><merchant-private-data><I><want/>to</I><spend>a<month or="two"/>at<Maui/>!!</spend></merchant-private-data>')
+        >>> decoder().deserialize(doc.documentElement)
+        """
         data = self._decode_into_dict(node)
         return data
 
@@ -125,7 +130,7 @@ class decoder:
                 #TODO !!
                 pass
         for attr in node.attributes.keys():
-            data = decoder._decode_string(node.attributes[attr])
+            data = decoder._decode_string(node.attributes[attr].nodeValue)
             self._add_to_dict(diction, attr, data)
         if len(diction[None]) == 0:
             del diction[None]
@@ -168,13 +173,13 @@ class decoder:
             return False
         try:
             return int(str)
-        except ValueError:pass
+        except Exception:pass
         try:
             return long(str)
-        except ValueError:pass
+        except Exception:pass
         try:
             return float(str)
-        except ValueError:pass
+        except Exception:pass
         str = unicode(str)
         if str[0] == '"' and str[-1] == '"':
             original = (str.replace('\\"', '"'))[1:-1]
