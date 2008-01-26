@@ -1,5 +1,4 @@
 from base64 import b64encode
-from django.utils.html import escape as html_escape
 from gchecky import gxml
 from gchecky import model as gmodel
 
@@ -7,6 +6,24 @@ class ProcessingException(Exception):
     def __init__(self, message, where=''):
         self.where = where
         return Exception.__init__(self, message)
+
+def html_escape(html):
+    """
+    A simple helper that escapes '<', '>' and '&' to make sure the text
+    is safe to be output directly into html text flow.
+    @param html A (unicode or not) string to be escaped from html.
+
+    >>> safe_str = 'Is''n it a text \"with\": some  fancy characters ;-)?!'
+    >>> html_escape(safe_str) == safe_str
+    True
+    >>> html_escape('Omg&, <this> is not &a safe string <to> &htmlize >_<!')
+    'Omg&amp;, &lt;this&gt; is not &amp;a safe string &lt;to&gt; &amp;htmlize &gt;_&lt;!'
+    """
+    if not isinstance(html, basestring):
+        # Nore: html should be a string already, so don't bother applying
+        # the correct encoding - use the system defaults.
+        html = unicode(html)
+    return html.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
 
 class html_order(object):
     """
@@ -624,3 +641,9 @@ class ControllerLevel_2(ControllerLevel_1):
 
 # Just an alias with a shorter name.
 Controller = ControllerLevel_2
+
+if __name__ == "__main__":
+    def run_doctests():
+        import doctest
+        doctest.testmod()
+    run_doctests()
