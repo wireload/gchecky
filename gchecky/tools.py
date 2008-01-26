@@ -72,6 +72,7 @@ class decoder:
         >>> from xml.dom.minidom import parseString
         >>> doc = parseString('<?xml version="1.0"?><merchant-private-data><I><want/>to</I><spend>a<month or="two"/>at<Maui/>!!</spend></merchant-private-data>')
         >>> decoder().deserialize(doc.documentElement)
+        {u'I': {None: [u'to'], u'want': None}, u'spend': {None: [u'a', u'at', u'!!'], u'Maui': None, u'month': {u'or': u'two'}}}
         """
         data = self._decode_into_dict(node)
         return data
