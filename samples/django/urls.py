@@ -1,7 +1,5 @@
 from django.conf.urls.defaults import *
 
-import settings
-
 urlpatterns = patterns('',
     (r'^admin/', include('django.contrib.admin.urls')),
 

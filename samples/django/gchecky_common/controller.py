@@ -1,4 +1,5 @@
 from gchecky import model as gmodel
+from django.conf import settings
 from gchecky.controller import Controller
 from gchecky.controller import GcheckyError, LibraryError, SystemError, HandlerError, DataError
 from gchecky_common.models import Order, Purchase, Message
@@ -38,11 +39,10 @@ class DjangoGController(Controller):
         Create a new Order instance in the database if everything is ok.
         """
         # First verify the currency
-        from settings import gcheckout_currency
-        if message.order_total.currency != gcheckout_currency:
+        if message.order_total.currency != settings.gcheckout_currency:
             raise Exception("Currency mismatch! %s != %s" % (
                              message.order_total.currency,
-                             gcheckout_currency
+                             settings.gcheckout_currency
                              ))
         # Check if the order already exist in the database
         if order is not None:
@@ -252,7 +252,6 @@ def get_controller():
     """
     from gchecky_common.controller import __controller__
     if __controller__ is None:
-        import settings
         __controller__ = DjangoGController(
             vendor_id    = settings.gcheckout_vendor_id,
             merchant_key = settings.gcheckout_merchant_key,
