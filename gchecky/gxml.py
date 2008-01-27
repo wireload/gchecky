@@ -394,6 +394,8 @@ class Node(object):
             if hasattr(self, field) and not(getattr(self, field) == getattr(other, field)):
                 return False
         return True
+    def __neq__(self, other):
+        return not(self == other)
 
 class DocumentManager(NodeManager):
     """Keeps track of all the L{Document} subclasses. Similar to L{NodeManager}
@@ -603,9 +605,14 @@ class Complex(Field):
         return 'Node%s:{ %s }' % (self._traits(), self.clazz.__name__)
 
 class String(Field):
-    """Any text value."""
-    def __init__(self, path, max_length=None, **kwargs):
-        return super(String, self).__init__(path, max_length=max_length, **kwargs)
+    """
+    A field representing a string value.
+    """
+    def __init__(self, path, max_length=None, empty=True, **kwargs):
+        return super(String, self).__init__(path,
+                                            max_length=max_length,
+                                            empty=empty,
+                                            **kwargs)
     def data2str(self, data):
         return str(data)
     def str2data(self, text):

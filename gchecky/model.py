@@ -92,7 +92,7 @@ class item_t(gxml.Node):
     >>> test_node(item_t(name='Peter', description='The Great', unit_price=price_t(value=1, currency='GBP'), quantity=1, merchant_item_id='custom_merchant_item_id',
     ...                  merchant_private_item_data=['some', {'private':'data', 'to':['test','the'],'thing':None}, '!! Numbers: ', None, False, True, [11, 12., [13.4]]])
     ...          )
-    >>> test_node(item_t(name='Peter', description='The Great', unit_price=price_t(value=1, currency='GBP'), quantity=1))
+    >>> test_node(item_t(name='Name with empty description', description='', unit_price=price_t(value=1, currency='GBP'), quantity=1))
     """
     name                = gxml.String('item-name')
     description         = gxml.String('item-description')
