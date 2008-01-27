@@ -3,10 +3,10 @@ from gchecky.controller import Controller
 
 # Google checkout information
 # Gchecky demo sandbox account info:
-gcheckout_vendor_id    = '618492934414682'
-gcheckout_merchant_key = 't2mBWWytbm_JlIiLzaemoQ'
-gcheckout_is_sandbox   = True # True for testing, False for production
-gcheckout_currency     = 'GBP' # 'USD' or 'GBP'
+GCHECKOUT_VENDOR_ID    = '618492934414682'
+GCHECKOUT_MERCHANT_KEY = 't2mBWWytbm_JlIiLzaemoQ'
+GCHECKOUT_IS_SANDBOX   = True # True for testing, False for production
+GCHECKOUT_CURRENCY     = 'GBP' # 'USD' or 'GBP'
 
 def create_cart():
     """
@@ -22,7 +22,7 @@ def create_cart():
                 description = 'A Golden Apple for You, my dear',
                 unit_price = gmodel.price_t(
                     value=0.15,
-                    currency = gcheckout_currency
+                    currency = GCHECKOUT_CURRENCY
                 ),
                 quantity = 2
             ),
@@ -31,7 +31,7 @@ def create_cart():
                 description = 'Vitamin C is the powa',
                 unit_price = gmodel.price_t(
                     value=.07,
-                    currency = gcheckout_currency
+                    currency = GCHECKOUT_CURRENCY
                 ),
                 quantity = 5
             )]
@@ -49,10 +49,10 @@ def get_controller():
     In a real application the controller should be a singleton, and should
     be obtained accordingly.
     """
-    controller = Controller(vendor_id    = gcheckout_vendor_id,
-                            merchant_key = gcheckout_merchant_key,
-                            is_sandbox   = gcheckout_is_sandbox,
-                            currency     = gcheckout_currency)
+    controller = Controller(vendor_id    = GCHECKOUT_VENDOR_ID,
+                            merchant_key = GCHECKOUT_MERCHANT_KEY,
+                            is_sandbox   = GCHECKOUT_IS_SANDBOX,
+                            currency     = GCHECKOUT_CURRENCY)
     return controller
 
 def cart_to_html(cart, controller):

@@ -84,9 +84,9 @@ INSTALLED_APPS = (
     'gchecky_donation',
 )
 
-# Google checkout information
-# Gchecky demo sandbox account info:
-gcheckout_vendor_id = '618492934414682'
-gcheckout_merchant_key = 't2mBWWytbm_JlIiLzaemoQ'
-gcheckout_is_sandbox = True # True for testing, False for production
-gcheckout_currency = 'GBP' # 'USD' or 'GBP'
+# Google checkout information (Gchecky demo sandbox account info).
+# Note: Use names in all capitals (ALL_CAPS), otherwise it's not picked up.
+GCHECKOUT_VENDOR_ID = '618492934414682'
+GCHECKOUT_MERCHANT_KEY = 't2mBWWytbm_JlIiLzaemoQ'
+GCHECKOUT_IS_SANDBOX = True # True for testing, False for production
+GCHECKOUT_CURRENCY = 'GBP' # 'USD' or 'GBP'

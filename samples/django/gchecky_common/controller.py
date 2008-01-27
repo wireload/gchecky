@@ -39,10 +39,10 @@ class DjangoGController(Controller):
         Create a new Order instance in the database if everything is ok.
         """
         # First verify the currency
-        if message.order_total.currency != settings.gcheckout_currency:
+        if message.order_total.currency != settings.GCHECKOUT_CURRENCY:
             raise Exception("Currency mismatch! %s != %s" % (
                              message.order_total.currency,
-                             settings.gcheckout_currency
+                             settings.GCHECKOUT_CURRENCY
                              ))
         # Check if the order already exist in the database
         if order is not None:
@@ -253,10 +253,10 @@ def get_controller():
     from gchecky_common.controller import __controller__
     if __controller__ is None:
         __controller__ = DjangoGController(
-            vendor_id    = settings.gcheckout_vendor_id,
-            merchant_key = settings.gcheckout_merchant_key,
-            currency     = settings.gcheckout_currency,
-            is_sandbox   = settings.gcheckout_is_sandbox,
+            vendor_id    = settings.GCHECKOUT_VENDOR_ID,
+            merchant_key = settings.GCHECKOUT_MERCHANT_KEY,
+            currency     = settings.GCHECKOUT_CURRENCY,
+            is_sandbox   = settings.GCHECKOUT_IS_SANDBOX,
             # Demo gchecky account is configured so that new orders are
             # automatically charged by Google, therefore do not send these
             # command, because it would be an error. However if your GC account

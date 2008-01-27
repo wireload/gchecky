@@ -4,10 +4,10 @@ import gchecky.controller as gcontroller
 
 class ControllerTestCase(unittest.TestCase):
     def setUp(self):
-        gcheckout_vendor_id = '552688368931861'
-        gcheckout_merchant_key = 'fse2vefEHSu8lQ2g-o6kZQ'
-        self.controller = gcontroller.Controller(gcheckout_vendor_id,
-                                                 gcheckout_merchant_key,
+        GCHECKOUT_VENDOR_ID = '552688368931861'
+        GCHECKOUT_MERCHANT_KEY = 'fse2vefEHSu8lQ2g-o6kZQ'
+        self.controller = gcontroller.Controller(GCHECKOUT_VENDOR_ID,
+                                                 GCHECKOUT_MERCHANT_KEY,
                                                  True)
     def testArchiving(self):
         self.controller.unarchive_order('457164429557231')
