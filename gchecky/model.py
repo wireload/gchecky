@@ -87,6 +87,10 @@ class digital_content_t(gxml.Node):
     display_disposition = gxml.String('display-disposition', required=False,
                                       values=DISPLAY_DISPOSITION)
 
+class item_weight_t(gxml.Node):
+    value = gxml.Double('@value') # , negative=False
+    unit  = gxml.String('@unit', values=('LB',))
+
 class item_t(gxml.Node):
     """
     >>> test_node(item_t(name='Peter', description='The Great', unit_price=price_t(value=1, currency='GBP'), quantity=1, merchant_item_id='custom_merchant_item_id',
@@ -98,6 +102,7 @@ class item_t(gxml.Node):
     description         = gxml.String('item-description')
     unit_price          = gxml.Complex('unit-price', price_t)
     quantity            = gxml.Decimal('quantity')
+    item_weight         = gxml.Complex('item-weight', item_weight_t, required=False)
     merchant_item_id    = gxml.String('merchant-item-id', required=False)
     tax_table_selector  = gxml.String('tax-table-selector', required=False)
     digital_content     = gxml.Complex('digital-content', digital_content_t, required=False)
@@ -164,7 +169,8 @@ class excluded_areas_t(areas_t):
 
 class tax_rule_t(gxml.Node):
     rate     = gxml.Double('rate', default=0.)
-    tax_area = gxml.Complex('tax-area', tax_area_t)
+    tax_area = gxml.Complex('tax-area', tax_area_t, required=False)
+    tax_areas = gxml.List('tax-areas', gxml.Complex('', tax_area_t), required=False)
 
 class default_tax_rule_t(tax_rule_t):
     shipping_taxed = gxml.Boolean('shipping-taxed', required=False)
@@ -231,16 +237,66 @@ class shipping_option_t(gxml.Node):
     allowed_areas  = gxml.Complex('shipping-restrictions/allowed-areas', allowed_areas_t, required=False)
     excluded_areas = gxml.Complex('shipping-restrictions/excluded-areas', excluded_areas_t, required=False)
 
+class address_filters_t(gxml.Node):
+    allowed_areas   = gxml.Complex('allowed-areas', allowed_areas_t, required=False)
+    excluded_areas  = gxml.Complex('excluded-areas', excluded_areas_t, required=False)
+    allow_us_po_box = gxml.Boolean('allow-us-po-box', required=False)
+
 class flat_rate_shipping_t(shipping_option_t):
     pass
 class merchant_calculated_shipping_t(shipping_option_t):
-    pass
+    address_filters = gxml.Complex('address-filters',
+                                   address_filters_t, required=False)
+
+# TODO: Add some special type of validation to:
+# shipping_company and shipping_type fields. See:
+# http://code.google.com/apis/checkout/developer/Google_Checkout_XML_API_Tag_Reference.html#tag_shipping-type
+class carrier_calculated_shipping_option_t(gxml.Node):
+    price = gxml.Complex('price', price_t)
+    shipping_company = gxml.String('shipping-company', values=('FedEx', 'UPS', 'USPS'))
+    carrier_pickup = gxml.String('carrier-pickup', values=('REGULAR_PICKUP',
+                                                           'SPECIAL_PICKUP',
+                                                           'DROP_OFF'),
+                                                   default='DROP_OFF',
+                                                   required=False)
+    shipping_type = gxml.String('shipping-type')
+    additional_fixed_charge = gxml.Complex('additional-fixed-charge', price_t, required=False)
+    additional_variable_charge_percent = gxml.Double('additional-variable-charge-percent', required=False)
+
+class measure_t(gxml.Node):
+    unit  = gxml.String('@unit', values=('IN',), default='IN')
+    value = gxml.Decimal('@value')
+
+class ship_from_t(gxml.Node):
+    id           = gxml.String('id')
+    city         = gxml.String('city')
+    region       = gxml.String('region', empty=True)
+    postal_code  = gxml.Zip('postal-code')
+    country_code = CountryCode('country-code')
+
+class shipping_package_t(gxml.Node):
+    delivery_address_category = gxml.String('delivery-address-category',
+                                            values=('RESIDENTIAL',
+                                                    'COMMERCIAL'), required=False)
+    height = gxml.Complex('height', measure_t)
+    length = gxml.Complex('length', measure_t)
+    ship_from = gxml.Complex('ship-from', ship_from_t)
+    width  = gxml.Complex('width', measure_t)
+
+class carrier_calculated_shipping_t(gxml.Node):
+    carrier_calculated_shipping_options = gxml.List('carrier-calculated-shipping-options',
+                                                    gxml.Complex('carrier-calculated-shipping-option',
+                                                                 carrier_calculated_shipping_option_t))
+    shipping_packages                   = gxml.List('shipping-packages',
+                                                    gxml.Complex('shipping-package',
+                                                                 shipping_package_t))
 
 class pickup_t(gxml.Node):
     name = gxml.String('@name')
     price = gxml.Complex('price', price_t)
 
 class shipping_methods_t(gxml.Node):
+    carrier_calculated_shippings  = gxml.List('', gxml.Complex('carrier-calculated-shipping', carrier_calculated_shipping_t), required=False) # list of carrier_calculated_shipping_t
     flat_rate_shippings           = gxml.List('', gxml.Complex('flat-rate-shipping', flat_rate_shipping_t), required=False) # list of flat_rate_shipping_t
     merchant_calculated_shippings = gxml.List('', gxml.Complex('merchant-calculated-shipping', merchant_calculated_shipping_t), required=False) # list of merchant_calculated_shipping_t
     pickups                       = gxml.List('', gxml.Complex('pickup', pickup_t), required=False) # list of pickup_t
@@ -272,6 +328,19 @@ class url_parameter_t(gxml.Node):
 class parameterized_url_t(gxml.Node):
     url        = gxml.Url('@url', required=True)
     parameters = gxml.List('parameters', gxml.Complex('url-parameter', url_parameter_t), required=True)
+
+
+class rounding_policy_t(gxml.Node):
+    mode = gxml.String('mode', choices=('UP',
+                                        'DOWN',
+                                        'CEILING',
+                                        'FLOOR',
+                                        'HALF_UP',
+                                        'HALF_DOWN',
+                                        'HALF_EVEN',
+                                        'UNNECESSARY'))
+    rule = gxml.String('rule', choices=('PER_LINE',
+                                        'TOTAL'))
 
 class checkout_flow_support_t(gxml.Node):
     """
@@ -326,11 +395,12 @@ class checkout_flow_support_t(gxml.Node):
     continue_shopping_url      = gxml.Url('continue-shopping-url', required=False) # optional, URL
     tax_tables                 = gxml.Complex('tax-tables', tax_tables_t, required=False) # optional, tax_tables_t
     shipping_methods           = gxml.Complex('shipping-methods', shipping_methods_t, required=False) # optional, shipping_methods_t
+    parameterized_urls         = gxml.List('parameterized-urls', gxml.Complex('parameterized-url', parameterized_url_t), required=False)
     merchant_calculations      = gxml.Complex('merchant-calculations', merchant_calculations_t, required=False) # optional, merchant_calculations_t
     request_buyer_phone_number = gxml.Boolean('request-buyer-phone-number', required=False) # optional, Boolean
-    platform_id                = gxml.Long('platform-id', required=False)
     analytics_data             = gxml.String('analytics-data', required=False)
-    parameterized_urls         = gxml.List('parameterized-urls', gxml.Complex('parameterized-url', parameterized_url_t), required=False)
+    platform_id                = gxml.Long('platform-id', required=False)
+    rounding_policy            = gxml.Complex('rounding-policy', rounding_policy_t, required=False)
 
 class shopping_cart_t(gxml.Node):
     expiration            = gxml.Timestamp('cart-expiration/good-until-date', required=False)
@@ -389,13 +459,27 @@ class shipping_adjustment_t(gxml.Node):
     shipping_name = gxml.String('shipping-name')
     shipping_cost = gxml.Complex('shipping-cost', price_t)
 
-# Two classes below represent the single 'shipping' tage, which content
+class carrier_calculated_shipping_adjustment_t(gxml.Node):
+    shipping_name = gxml.String('shipping-name')
+    shipping_cost = gxml.Complex('shipping-cost', price_t)
+
+# Two classes below represent the single 'shipping' tag, which content
 # depends on the context the XML Node is present.
 # http://code.google.com/apis/checkout/developer/index.html#tag_shipping
 class shipping_in_order_adjustment_t(gxml.Node):
-    merchant_calculated_shipping_adjustment = gxml.Complex('merchant-calculated-shipping-adjustment', shipping_adjustment_t, required=False)
-    flat_rate_shipping_adjustment           = gxml.Complex('flat-rate-shipping-adjustment', shipping_adjustment_t, required=False)
-    pickup_shipping_adjustment              = gxml.Complex('pickup-shipping-adjustment', shipping_adjustment_t, required=False)
+    carrier_calculated_shipping_adjustment  = gxml.Complex('carrier-calculated-shipping-adjustment',
+                                                           carrier_calculated_shipping_adjustment_t,
+                                                           required=False)
+    flat_rate_shipping_adjustment           = gxml.Complex('flat-rate-shipping-adjustment',
+                                                           shipping_adjustment_t,
+                                                           required=False)
+    merchant_calculated_shipping_adjustment = gxml.Complex('merchant-calculated-shipping-adjustment',
+                                                           shipping_adjustment_t,
+                                                           required=False)
+    pickup_shipping_adjustment              = gxml.Complex('pickup-shipping-adjustment',
+                                                           shipping_adjustment_t,
+                                                           required=False)
+    methods                                 = gxml.List('', gxml.String('method/@name'))
 
 class shipping_in_calculate_t(gxml.Node):
     methods                                 = gxml.List('', gxml.String('method/@name'))
@@ -406,6 +490,10 @@ class order_adjustment_t(gxml.Node):
     merchant_codes                  = gxml.Complex('merchant-codes', merchant_codes_t, required=False)
     shipping                        = gxml.Complex('shipping', shipping_in_order_adjustment_t, required=False)
     total_tax                       = gxml.Complex('total-tax', price_t, required=False)
+
+class structured_name_t(gxml.Node):
+    first_name = gxml.String('first-name')
+    last_name  = gxml.String('last-name')
 
 class address_t(gxml.Node):
     address1     = gxml.String('address1')
@@ -419,6 +507,8 @@ class address_t(gxml.Node):
     phone        = gxml.Phone('phone', required=False, empty=True)
     postal_code  = gxml.Zip('postal-code')
     region       = gxml.String('region', empty=True)
+    structured_name = gxml.Complex('structured-name',
+                                   structured_name_t, required=False)
 
 class buyer_billing_address_t(address_t):
     pass
@@ -426,7 +516,8 @@ class buyer_shipping_address_t(address_t):
     pass
 class billing_address_t(address_t):
     # google docs do not say address_id is optional, but sandbox omits it.. :S bug?
-    address_id = gxml.ID('@address-id', required=False)
+    # address_id = gxml.ID('@address-id', required=False)
+    pass
 
 class buyer_marketing_preferences_t(gxml.Node):
     email_allowed = gxml.Boolean('email-allowed')
@@ -437,6 +528,12 @@ class abstract_notification_t(gxml.Document):
     serial_number       = gxml.ID('@serial-number')
     google_order_number = gxml.ID('google-order-number')
     timestamp                   = gxml.Timestamp('timestamp')
+
+class promotion_t(gxml.Node):
+    description  = gxml.String('description', required=False, max_length=1024)
+    id           = gxml.Long('id')
+    name         = gxml.String('name')
+    total_amount = gxml.Complex('total-amount', price_t)
 
 FINANCIAL_ORDER_STATE=('REVIEWING', 'CHARGEABLE', 'CHARGING', 'CHARGED', 'PAYMENT_DECLINED', 'CANCELLED', 'CANCELLED_BY_GOOGLE')
 FULFILLMENT_ORDER_STATE=('NEW', 'PROCESSING', 'DELIVERED', 'WILL_NOT_DELIVER')
@@ -452,6 +549,9 @@ class new_order_notification_t(abstract_notification_t):
     order_adjustment            = gxml.Complex('order-adjustment', order_adjustment_t)
     order_total                 = gxml.Complex('order-total', price_t)
     shopping_cart               = gxml.Complex('shopping-cart', shopping_cart_t)
+    promotions                  = gxml.List('promotions',
+                                            gxml.Complex('promotion', promotion_t),
+                                            required=False)
 
 class checkout_redirect_t(gxml.Document):
     """
@@ -467,7 +567,8 @@ class checkout_redirect_t(gxml.Document):
     redirect_url  = gxml.Url('redirect-url')
 
 class notification_acknowledgment_t(gxml.Document):
-    tag_name = 'notification-acknowledgment'
+    tag_name      = 'notification-acknowledgment'
+    serial_number = gxml.ID('@serial-number')
 
 class order_state_change_notification_t(abstract_notification_t):
     tag_name = 'order-state-change-notification'
@@ -626,17 +727,24 @@ class charge_amount_notification_t(abstract_notification_t):
     ... )
     """
     tag_name='charge-amount-notification'
-    latest_charge_amount = gxml.Complex('latest-charge-amount', price_t)
+    latest_charge_amount = gxml.Complex('latest-charge-amount',
+                                        price_t)
+    latest_promotion_charge_amount = gxml.Complex('latest-promotion-charge-amount',
+                                                  price_t, required=False)
     total_charge_amount  = gxml.Complex('total-charge-amount', price_t)
 
 class refund_amount_notification_t(abstract_notification_t):
     tag_name='refund-amount-notification'
     latest_refund_amount = gxml.Complex('latest-refund-amount', price_t)
+    latest_promotion_refund_amount = gxml.Complex('latest-promotion-refund-amount',
+                                                  price_t, required=False)
     total_refund_amount  = gxml.Complex('total-refund-amount', price_t)
 
 class chargeback_amount_notification_t(abstract_notification_t):
     tag_name='chargeback-amount-notification'
     latest_chargeback_amount = gxml.Complex('latest-chargeback-amount', price_t)
+    latest_promotion_chargeback_amount = gxml.Complex('latest-promotion-chargeback-amount',
+                                                      price_t, required=False)
     total_chargeback_amount  = gxml.Complex('total-chargeback-amount', price_t)
 
 class authorization_amount_notification_t(abstract_notification_t):
@@ -746,11 +854,12 @@ class diagnosis_t(gxml.Document):
     <http://code.google.com/apis/checkout/developer/index.html#validating_xml_messages>}
     section for more information about diagnostic requests and responses.
     """
-    tag_name = 'diagnosis'
-    input_xml = gxml.Any('input-xml')
-    warnings  = gxml.List('warnings',
-                          gxml.String('string'),
-                          required=False)
+    tag_name      = 'diagnosis'
+    input_xml     = gxml.Any('input-xml')
+    warnings      = gxml.List('warnings',
+                              gxml.String('string'),
+                              required=False)
+    serial_number = gxml.ID('@serial-number')
 
 class demo_failure_t(gxml.Document):
     """
@@ -763,6 +872,43 @@ class demo_failure_t(gxml.Document):
     """
     tag_name = 'demo-failure'
     message = gxml.String('@message', max_length=25)
+
+class item_id_t(gxml.Node):
+    merchant_item_id = gxml.String('merchant-item-id')
+
+class backorder_items_t(abstract_order_t):
+    tag_name   = 'backorder-items'
+    item_ids   = gxml.List('item-ids', gxml.Complex('item-id', item_id_t))
+    send_email = gxml.Boolean('send-email', required=False)
+
+class cancel_items_t(abstract_order_t):
+    tag_name = 'cancel-items'
+    reason = gxml.String('comment')
+    comment = gxml.String('comment')
+    item_ids   = gxml.List('item-ids', gxml.Complex('item-id', item_id_t))
+    send_email = gxml.Boolean('send-email', required=False)
+
+class reset_items_shipping_information_t(abstract_order_t):
+    tag_name   = 'reset-items-shipping-information'
+    item_ids   = gxml.List('item-ids', gxml.Complex('item-id', item_id_t))
+    send_email = gxml.Boolean('send-email', required=False)
+
+class return_items_t(abstract_order_t):
+    tag_name   = 'return-items'
+    item_ids   = gxml.List('item-ids', gxml.Complex('item-id', item_id_t))
+    send_email = gxml.Boolean('send-email', required=False)
+
+class item_shipping_information_t(gxml.Node):
+    item_id = gxml.Complex('item-id', item_id_t)
+    tracking_data_list = gxml.List('tracking-data-list',
+                                   gxml.Complex('tracking-data', tracking_data_t))
+
+class ship_items_t(abstract_order_t):
+    tag_name   = 'ship-items'
+    item_shipping_information_list = gxml.List('item-shipping-information-list',
+                                               gxml.Complex('item-shipping-information',
+                                                            item_shipping_information_t))
+    send_email = gxml.Boolean('send-email')
 
 if __name__ == "__main__":
     def run_doctests():
