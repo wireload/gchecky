@@ -46,7 +46,7 @@ Intergration of the library consists of four phases:
 import os.path
 import re
 
-VERSION = (0, 2, 0)
+VERSION = (0, 2, 1)
 
 def version(version=VERSION):
     """
