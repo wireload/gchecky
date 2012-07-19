@@ -1,7 +1,7 @@
 gchecky
 =======
 
-WireLoad's fork of [gchecky](https://code.google.com/p/gchecky/).
+WireLoad's fork of Eugene Tarassov's [gchecky](https://code.google.com/p/gchecky/).
 
 Installation
 ============
