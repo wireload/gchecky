@@ -48,5 +48,4 @@ or to some local directory:
 
     $ easy_install --install-dir=<the_location> epydoc
 
-or download the installation package from http://epydoc.sourceforge.net/
-and follow the instructions.
+or download the installation package from [Epydoc](http://epydoc.sourceforge.net/) and follow the instructions.
