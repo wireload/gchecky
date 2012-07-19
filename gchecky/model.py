@@ -14,7 +14,7 @@ All the comments for the GC API are at U{Google Chackout API documentation
 questions about GC API functioning.
 
 @author: etarassov
-@version: $Revision$
+@version: $Revision: 129 $
 @contact: gchecky at gmail
 """
 
@@ -498,14 +498,16 @@ class structured_name_t(gxml.Node):
 class address_t(gxml.Node):
     address1     = gxml.String('address1')
     address2     = gxml.String('address2', required=False)
-    city         = gxml.String('city')
+    #YMO patch -> required=False, empty=True
+    city         = gxml.String('city', required=False, empty=True)
     company_name = gxml.String('company-name', required=False)
     contact_name = gxml.String('contact-name', required=False)
     country_code = gxml.String('country-code')
     email        = gxml.Email('email', required=False)
     fax          = gxml.Phone('fax', required=False, empty=True)
     phone        = gxml.Phone('phone', required=False, empty=True)
-    postal_code  = gxml.Zip('postal-code')
+    #YMO patch -> empty=True
+    postal_code  = gxml.Zip('postal-code', empty=True)
     region       = gxml.String('region', empty=True)
     structured_name = gxml.Complex('structured-name',
                                    structured_name_t, required=False)

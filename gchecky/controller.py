@@ -391,7 +391,16 @@ class ControllerLevel_2(ControllerLevel_1):
         The helper method that submits an xml message to GC.
         """
         context.diagnose = diagnose
-        url = self.get_order_processing_url(diagnose)
+
+        # YMO Patch: allow server to server cart posts.
+        checkoutSignature = """<?xml version="1.0" encoding="UTF-8"?>
+
+        <checkout-shopping-cart"""
+        if str(msg).startswith(checkoutSignature):
+          url = self.get_server_post_cart_url(diagnose)
+        else:
+          url = self.get_order_processing_url(diagnose)
+
         context.url = url
         import urllib2
         req = urllib2.Request(url=url, data=msg)
@@ -460,6 +469,11 @@ class ControllerLevel_2(ControllerLevel_1):
 
         if doc.__class__ == gmodel.bye_t:
             return doc
+
+        # YMO Patch
+        # Server posting of cart returns a response of this type.
+        if doc.__class__ == gmodel.checkout_redirect_t:
+          return doc;
 
         # It's not 'ok' so it has to be 'error', otherwise it's an error
         if doc.__class__ != gmodel.error_t:
