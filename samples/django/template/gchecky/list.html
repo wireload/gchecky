@@ -1,0 +1,43 @@
+{% extends "gchecky/base.html" %}
+
+{% block title %}List of processed orders{% endblock %}
+
+{% block page %}
+
+{% block page_head %}
+<h2>The list of orders</h2>
+{% endblock page_head %}
+
+<hr />
+
+<p>The orders (below) are being processed in the real time on the server side.</p>
+
+<p>Hit <strong>Refresh</strong> button in your browser to update the order list
+(or just press <strong>F5</strong> if you are using Firefox, Opera, or IE).</p>
+
+<table id="order_list" border="1">
+<tr>
+    <th>#</th>
+    <th>created</th>
+    <th>msgs</th>
+    <th class="user">owner</th>
+    <th>items</th>
+    <th>price</th>
+    <th>state</th>
+    <th>money</th>
+</tr>
+{% for order in order_list %}
+<tr class="{{order.payment}}">
+    <td class="id"     ><a href="{{order.get_absolute_url}}">{{order.id}}</a></td>
+    <td class="time"   ><a href="{{order.get_absolute_url}}">{{order.created|timesince}}</a></td>
+    <td class="count"  ><a href="{{order.get_absolute_url}}">{{order.message_set.count}}</a></td>
+    <td                ><a href="{{order.get_absolute_url}}">{{order.user_id}}</a></td>
+    <td class="count"  ><a href="{{order.get_absolute_url}}">{{order.purchase_set.count}}</a></td>
+    <td class="price"  ><a href="{{order.get_absolute_url}}">{{order.total}} {{order.currency}}</a></td>
+    <td class="state"  ><a href="{{order.get_absolute_url}}">{{order.state}}</a></td>
+    <td class="payment"><a href="{{order.get_absolute_url}}">{{order.payment}}</a></td>
+</tr>
+{% endfor %}
+</table>
+
+{% endblock page %}

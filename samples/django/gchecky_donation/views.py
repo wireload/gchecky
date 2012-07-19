@@ -1,0 +1,1 @@
+# Donations are just clickable buttons - no shopping cart is needed. Empty.

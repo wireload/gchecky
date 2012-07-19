@@ -1,0 +1,37 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+                      "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+    <link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}/css/main.css" />
+
+    <title>{% block title %}Gchecky demo Django application{% endblock %}</title>
+<!--
+    <script type="text/javascript" src="{{MEDIA_URL}}/js/mootools-release-1.11.js"></script>
+    <script type="text/javascript" src="{{MEDIA_URL}}/js/gchecky.js"></script>
+-->
+
+</head>
+<body>
+<div id="page"><div id="page_content">
+{% block page %}
+    <a href="digital/">Digital store</a>
+    <br />
+    <a href="donation/">Make a donation</a>
+{% endblock %}
+</div></div>
+
+<div id="sidebar"><div id="sidebar_content">
+{% block sidebar %}
+{% endblock sidebar %}
+</div></div>
+<script type="text/javascript"><!--
+var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+//--></script>
+<script type="text/javascript"><!--
+var pageTracker = _gat._getTracker("UA-2487898-2");
+pageTracker._initData();
+pageTracker._trackPageview();
+//--></script>
+</body>
+</html>

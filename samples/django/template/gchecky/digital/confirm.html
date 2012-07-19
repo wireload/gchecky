@@ -1,0 +1,32 @@
+{% extends "gchecky/base.html" %}
+
+{% block title %}Confirm order{% endblock %}
+
+{% block page %}
+
+<table>
+<tr>
+  <th>title</th>
+  <th>description</th>
+  <th>quantity</th>
+  <th>price</th>
+</tr>
+{% for item in items %}
+<tr>
+  <td>{{ item.title }}</td>
+  <td>{{ item.description }}</td>
+  <td>{{ item.quantity }}</td>
+  <td>{{ item.get_friendly_price }}</td>
+</tr>
+{% endfor %}
+<tr>
+  <th>total</th>
+  <td></td>
+  <td></td>
+  <th>{{ total }}</th>
+</tr>
+</table>
+
+{{ cart.html|safe }}
+
+{% endblock %}

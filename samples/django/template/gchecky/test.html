@@ -1,0 +1,11 @@
+{% extends "gchecky/base.html" %}
+
+{% block page %}
+<form method="POST" action="?">
+<textarea name="input" rows="15" cols="80" focus>{{ input }}</textarea>
+<br />
+<input type="submit" value="test"/>
+</form>
+<hr />
+<textarea readonly cols="80" rows="15">{{ output }}</textarea>
+{% endblock page %}
